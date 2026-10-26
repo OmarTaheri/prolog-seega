@@ -5,9 +5,8 @@ This project implements the full game with its **rules and AI written in SWI-Pro
 a **Python (FastAPI)** API, and a **React** interface that lets you play and
 **watch the AI's minimax / alpha-beta search tree** for every move.
 
-It is meant as a learning tool: a coach grades your moves, hints explain
-themselves, and every move of a game can be replayed together with the search
-tree the engine used.
+It is meant as a learning tool: hints show the engine's reasoning, and every
+move of a game can be replayed together with the search tree the engine used.
 
 ```
 ┌──────────────────────┐   HTTP / JSON   ┌──────────────────────┐   JSON lines   ┌──────────────────────────┐
@@ -30,11 +29,10 @@ tree the engine used.
   Click any node to see its α/β window and score. You can replay the search step by step.
 - **Browse the whole game**: open the tree for any past move. For moves made by a person,
   the engine shows what it would have played and marks the move that was actually played.
-- **Coach & hints**: each move is graded (best / good / inaccuracy / mistake / blunder),
-  with explanations.
+- **Hints**: ask the engine for a move and open its search tree to see why.
 - **Modes**: you vs the AI, two players on one screen, or AI vs AI.
 - **Interface**: a full-screen carved board (sandstone, acacia wood or basalt), animated
-  stones, a sidebar with panels that slide in (Tree, Coach, Moves, Stats, Info, Settings),
+  stones, a sidebar with panels that slide in (Tree, Moves, Stats, Info, Settings),
   clocks, undo/redo and sound.
 
 ## Rules implemented
@@ -149,7 +147,7 @@ prolog/
   rules.pl     legal moves, applying moves, captures, chains, blocked turns, game end
   eval.pl      heuristic evaluation (material, safety, mobility, threats)
   ai.pl        minimax + alpha-beta that records the search tree; repetition handling
-  api.pl       JSON entry point handle/2, coach notes, move grading, stdio server
+  api.pl       JSON entry point handle/2, stdio server
   tests.pl     plunit tests
 backend/
   main.py      FastAPI routes (also serves the built frontend when STATIC_DIR is set)
@@ -172,10 +170,9 @@ All endpoints take and return JSON. The game state is included in every request.
 |---|---|---|---|
 | `GET` | `/api/health` | – | `{ ok, bridge }` |
 | `POST` | `/api/new` | – | initial `state` and `legal` moves |
-| `POST` | `/api/play` | `state`, `move`, `history` | next `state`, `captured`, `legal`, `notes` |
+| `POST` | `/api/play` | `state`, `move`, `history` | next `state`, `captured`, `legal` |
 | `POST` | `/api/ai` | `state`, `depth`, `show_depth`, `history` | engine `move`, next `state`, search `tree`, `stats` |
-| `POST` | `/api/hint` | `state`, `depth`, `show_depth`, `history` | suggested `move`, `tree`, `notes` (state unchanged) |
-| `POST` | `/api/analyze` | `state`, `move`, `depth`, `history` | `verdict`, scores, engine ranking of every move |
+| `POST` | `/api/hint` | `state`, `depth`, `show_depth`, `history` | suggested `move`, `tree`, `stats` (state unchanged) |
 
 A move is `{"type":"drop","to":7}`, `{"type":"move","from":7,"to":12}` or `{"type":"stop"}`.
 Squares are numbered 0–24 row by row from the top-left (`a5` = 0, `e1` = 24).

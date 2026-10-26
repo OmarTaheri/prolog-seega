@@ -52,10 +52,6 @@ class SearchRequest(StateRequest):
     show_depth: int = Field(2, ge=1, le=3)
 
 
-class AnalyzeRequest(PlayRequest):
-    depth: int = Field(2, ge=1, le=4)
-
-
 def _check_state(state: dict) -> None:
     board = state.get("board")
     if not isinstance(board, str) or len(board) != 25 or set(board) - set("ewb"):
@@ -101,12 +97,6 @@ def ai_move(req: SearchRequest):
 def hint(req: SearchRequest):
     _check_state(req.state)
     return _run("hint", state=req.state, depth=req.depth, show_depth=req.show_depth, history=req.history)
-
-
-@app.post("/api/analyze")
-def analyze(req: AnalyzeRequest):
-    _check_state(req.state)
-    return _run("analyze", state=req.state, move=req.move.as_json(), depth=req.depth, history=req.history)
 
 
 # Serve the built frontend last, so /api/* routes take precedence.

@@ -20,8 +20,6 @@ export const aiMove = (state, depth, showDepth, history = []) =>
   post('ai', { state, depth, show_depth: showDepth, history })
 export const hint = (state, depth, showDepth, history = []) =>
   post('hint', { state, depth, show_depth: showDepth, history })
-export const analyze = (state, move, depth, history = []) =>
-  post('analyze', { state, move, depth, history })
 
 export const positionKey = (state) => state.board + state.turn
 

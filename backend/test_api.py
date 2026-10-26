@@ -35,10 +35,3 @@ def test_play_drop_then_ai_returns_tree():
     assert data["tree"]["status"] == "root"
     assert any(c["status"] == "best" for c in data["tree"]["children"])
     assert data["stats"]["nodes"] > 1
-
-
-def test_analyze_grades_move():
-    state = new_state()["state"]
-    r = client.post("/api/analyze", json={"state": state, "move": {"type": "drop", "to": 0}, "depth": 2})
-    assert r.status_code == 200
-    assert r.json()["verdict"] in {"best", "good", "inaccuracy", "mistake", "blunder"}

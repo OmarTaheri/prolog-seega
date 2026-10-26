@@ -2,11 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import * as api from './api'
 import { positionKey, sideName } from './api'
 import Board from './components/Board'
-import CoachPanel from './components/CoachPanel'
 import SearchTree from './components/SearchTree'
 import { InfoPanel, LEVELS, MovesPanel, SettingsPanel, StatsPanel } from './components/Panels'
 import {
-  IconArrowLeft, IconBulb, IconCoach, IconFlip, IconGame, IconInfo, IconMoves, IconMute,
+  IconArrowLeft, IconBulb, IconFlip, IconGame, IconInfo, IconMoves, IconMute,
   IconNew, IconNext, IconPause, IconPlay, IconPrev, IconSettings, IconStats, IconStop,
   IconTree, IconVolume,
 } from './icons'
@@ -14,7 +13,7 @@ import { playMoveSound } from './sound'
 import './App.css'
 
 const DEFAULTS = {
-  mode: 'hvai', humanSide: 'w', depth: 3, showDepth: 3, coach: true,
+  mode: 'hvai', humanSide: 'w', depth: 3, showDepth: 3,
   anim: 'normal', theme: 'sandstone', sound: true, coords: true, showLegal: true,
 }
 const THEMES = ['sandstone', 'acacia', 'basalt']
@@ -22,7 +21,6 @@ const ANIM_MS = { off: 0, fast: 160, normal: 300, slow: 560 }
 
 const PANELS = [
   { id: 'tree', label: 'Tree', title: 'Search tree', Icon: IconTree, wide: true },
-  { id: 'coach', label: 'Coach', title: 'Coach', Icon: IconCoach },
   { id: 'moves', label: 'Moves', title: 'Moves', Icon: IconMoves },
   { id: 'stats', label: 'Stat.', title: 'Statistics', Icon: IconStats },
   { id: 'info', label: 'Info', title: 'How to play', Icon: IconInfo },
@@ -58,7 +56,6 @@ export default function App() {
   const [searches, setSearches] = useState([])
   const [treeUnseen, setTreeUnseen] = useState(false)
   const [hintMove, setHintMove] = useState(null)
-  const [coach, setCoach] = useState(null)
   const [toast, setToast] = useState(null)
   const [panel, setPanel] = useState(null)
   const [flipped, setFlipped] = useState(false)
@@ -129,7 +126,6 @@ export default function App() {
       setSearches([])
       setTreeUnseen(false)
       setHintMove(null)
-      setCoach(null)
       setToast(null)
       setBusy(false)
       setAutoPlay(true)
@@ -188,8 +184,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tl, depth, showDepth])
 
-  function showToast(t) {
-    setToast({ ...t, key: Date.now() })
+  function showToast(text) {
+    setToast({ text, key: Date.now() })
   }
   useEffect(() => {
     if (!toast) return
@@ -204,22 +200,9 @@ export default function App() {
     setBusy(true)
     setError(null)
     try {
-      const hist = historyKeys()
-      const res = await api.play(before, move, hist)
+      const res = await api.play(before, move, historyKeys())
       if (id !== gameId.current) return
       push(res, { side: before.turn, label: res.label, captured: res.captured.length, by: 'human' })
-      if (settings.coach && move.type !== 'stop') {
-        setCoach({ loading: true })
-        api.analyze(before, move, Math.min(depth, 3), hist)
-          .then((a) => {
-            if (id !== gameId.current) return
-            setCoach({ ...a, title: `${sideName(before.turn)} played ${res.label}` })
-            showToast({ verdict: a.verdict, text: a.notes?.[0] || `${res.label}` })
-          })
-          .catch(() => setCoach({ title: res.label, notes: res.notes }))
-      } else {
-        setCoach({ title: `${sideName(before.turn)} played ${res.label}`, notes: res.notes })
-      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -260,19 +243,16 @@ export default function App() {
   async function askHint() {
     if (!s || busy) return
     setBusy(true)
-    setCoach({ loading: true })
     try {
       const res = await api.hint(s, depth, showDepth, historyKeys())
       setHintMove(res.move)
       setHintSearch({ tree: res.tree, stats: res.stats, side: s.turn, by: 'hint', label: res.label, key: `${res.tree.id}-${Date.now()}` })
       setTreeView('hint')
       setSearches((l) => [...l, { ...res.stats, side: s.turn, label: `hint ${res.label}` }])
-      setCoach({ title: `Hint: ${res.label}`, notes: res.notes })
-      showToast({ verdict: 'hint', text: `Try ${res.label}: open the search tree to see why.`, panel: 'tree' })
+      showToast(`Try ${res.label}: open the search tree to see why.`)
       setTreeUnseen(panel !== 'tree')
     } catch (e) {
       setError(e.message)
-      setCoach(null)
     } finally {
       setBusy(false)
     }
@@ -467,7 +447,6 @@ export default function App() {
                     </div>}
               </>
             )}
-            {panel === 'coach' && <div className="panel-scroll"><CoachPanel coach={coach} /></div>}
             {panel === 'moves' && <MovesPanel history={fullHistory} ptr={tl.ptr} onJump={jump} onTree={showTreeOf} />}
             {panel === 'stats' && <StatsPanel state={s} searches={searches} history={history} />}
             {panel === 'info' && <InfoPanel />}
@@ -531,8 +510,8 @@ export default function App() {
         </div>
 
         {toast && (
-          <button key={toast.key} className={`toast ${toast.verdict}`} onClick={() => openPanel(toast.panel || 'coach')}>
-            <span className="toast-tag">{toast.verdict === 'hint' ? 'Hint' : toast.verdict}</span>
+          <button key={toast.key} className="toast hint" onClick={() => openPanel('tree')}>
+            <span className="toast-tag">Hint</span>
             <span>{toast.text}</span>
           </button>
         )}

@@ -28,10 +28,6 @@ export const IconTree = make(<>
   <rect x="16.5" y="16.5" width="5" height="4.5" rx="1" />
   <path d="M12 7v4.5M5 16.5v-2.5h14v2.5M12 11.5v5" />
 </>)
-export const IconCoach = make(<>
-  <path d="M9 18h6M10 21h4" />
-  <path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.4 1.1 2.2h5c0-.8.4-1.6 1.1-2.2A6 6 0 0 0 12 3z" />
-</>)
 export const IconMoves = make(<>
   <path d="M9 6h11M9 12h11M9 18h11" />
   <path d="M4 6h.01M4 12h.01M4 18h.01" strokeWidth="2.6" />

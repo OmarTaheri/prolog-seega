@@ -70,7 +70,6 @@ export function SettingsPanel({ settings, set, onNewGame }) {
       <button className="btn primary wide" onClick={onNewGame}>Start a new game</button>
 
       <h4 className="group-title">Learning</h4>
-      <Toggle label="Coach" hint="Grade every move against the engine." checked={settings.coach} onChange={(v) => set({ coach: v })} />
       <Toggle label="Show legal moves" checked={settings.showLegal} onChange={(v) => set({ showLegal: v })} />
       <Field label="Search tree levels drawn" hint="Deeper trees show more pruned (red) branches.">
         <Segmented value={settings.showDepth} onChange={(v) => set({ showDepth: v })}
