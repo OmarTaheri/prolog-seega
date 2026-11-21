@@ -171,8 +171,8 @@ All endpoints take and return JSON. The game state is included in every request.
 | `GET` | `/api/health` | – | `{ ok, bridge }` |
 | `POST` | `/api/new` | – | initial `state` and `legal` moves |
 | `POST` | `/api/play` | `state`, `move`, `history` | next `state`, `captured`, `legal` |
-| `POST` | `/api/ai` | `state`, `depth`, `show_depth`, `history` | engine `move`, next `state`, search `tree`, `stats` |
-| `POST` | `/api/hint` | `state`, `depth`, `show_depth`, `history` | suggested `move`, `tree`, `stats` (state unchanged) |
+| `POST` | `/api/ai` | `state`, `depth`, `history` | engine `move`, next `state`, search `tree`, `stats` |
+| `POST` | `/api/hint` | `state`, `depth`, `history` | suggested `move`, `tree`, `stats` (state unchanged) |
 
 A move is `{"type":"drop","to":7}`, `{"type":"move","from":7,"to":12}` or `{"type":"stop"}`.
 Squares are numbered 0–24 row by row from the top-left (`a5` = 0, `e1` = 24).

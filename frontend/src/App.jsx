@@ -13,7 +13,7 @@ import { playMoveSound } from './sound'
 import './App.css'
 
 const DEFAULTS = {
-  mode: 'hvai', humanSide: 'w', depth: 3, showDepth: 3,
+  mode: 'hvai', humanSide: 'w', depth: 3,
   anim: 'normal', theme: 'sandstone', sound: true, coords: true, showLegal: true,
 }
 const THEMES = ['sandstone', 'acacia', 'basalt']
@@ -32,7 +32,6 @@ function loadSettings() {
     const saved = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('seega-settings') || '{}') }
     if (!THEMES.includes(saved.theme)) saved.theme = DEFAULTS.theme
     saved.depth = clampDepth(saved.depth, DEFAULTS.depth)
-    saved.showDepth = clampDepth(saved.showDepth, DEFAULTS.showDepth)
     return saved
   } catch {
     return DEFAULTS
@@ -68,7 +67,7 @@ export default function App() {
   const stageRef = useRef(null)
   const gameId = useRef(0)
 
-  const { mode, humanSide, depth, showDepth } = settings
+  const { mode, humanSide, depth } = settings
   const animMs = ANIM_MS[settings.anim] ?? 300
   const cur = tl.list[tl.ptr]
   const s = cur?.state
@@ -168,7 +167,7 @@ export default function App() {
     const id = gameId.current
     setReviewBusy(true)
     try {
-      const res = await api.hint(prev.state, depth, showDepth, historyKeys(index - 1))
+      const res = await api.hint(prev.state, depth, historyKeys(index - 1))
       if (id !== gameId.current) return
       const search = {
         tree: res.tree, stats: res.stats, side: prev.state.turn, by: 'review', label: res.label,
@@ -184,7 +183,7 @@ export default function App() {
       setReviewBusy(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tl, depth, showDepth])
+  }, [tl, depth])
 
   function showToast(text) {
     setToast({ text, key: Date.now() })
@@ -218,7 +217,7 @@ export default function App() {
     const before = s
     setBusy(true)
     try {
-      const res = await api.aiMove(before, depth, showDepth, historyKeys())
+      const res = await api.aiMove(before, depth, historyKeys())
       if (id !== gameId.current) return
       const search = { tree: res.tree, stats: res.stats, side: before.turn, by: 'ai', label: res.label, key: `${res.tree.id}-${Date.now()}` }
       push(res, { side: before.turn, label: res.label, captured: res.captured.length, by, score: res.score }, search)
@@ -231,7 +230,7 @@ export default function App() {
     }
     // push/panel are read at call time on purpose
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s, tl, depth, showDepth, panel, settings.sound])
+  }, [s, tl, depth, panel, settings.sound])
 
   // AI plays whenever it is its turn (pairs of drops, capture chains, extra turns).
   useEffect(() => {
@@ -246,7 +245,7 @@ export default function App() {
     if (!s || busy) return
     setBusy(true)
     try {
-      const res = await api.hint(s, depth, showDepth, historyKeys())
+      const res = await api.hint(s, depth, historyKeys())
       setHintMove(res.move)
       setHintSearch({ tree: res.tree, stats: res.stats, side: s.turn, by: 'hint', label: res.label, key: `${res.tree.id}-${Date.now()}` })
       setTreeView('hint')

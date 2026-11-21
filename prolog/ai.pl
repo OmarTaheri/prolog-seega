@@ -31,8 +31,8 @@
     (In chess you can say "even depth = me, odd depth = opponent".
      In Seega that is wrong: after my first drop it is STILL my turn.)
 
-    While searching, the engine records the search tree (down to
-    ShowDepth plies) so the frontend can draw it:
+    While searching, the engine records every node it visits, so the
+    frontend can draw the whole search tree:
 
       status  root      the current position
               best      on the principal variation chosen by the engine
@@ -42,8 +42,8 @@
               repeat    repeats an earlier position: penalised, not searched
 */
 :- module(ai,
-          [ best_move/7,
-            best_move/8,
+          [ best_move/6,
+            best_move/7,
             state_key/2,
             move_json/2,
             move_label/2,
@@ -71,12 +71,12 @@ state_key(S, K) :-
     state_turn(S, T),
     string_concat(BS, T, K).
 
-%   best_move(+State, +Depth, +ShowDepth, -Move, -Value, -Tree, -Stats)
-%   Same as best_move/8 with an empty history (used by the tests).
-best_move(S, Depth, ShowDepth, Move, Value, Tree, Stats) :-
-    best_move(S, Depth, ShowDepth, [], Move, Value, Tree, Stats).
+%   best_move(+State, +Depth, -Move, -Value, -Tree, -Stats)
+%   Same as best_move/7 with an empty history (used by the tests).
+best_move(S, Depth, Move, Value, Tree, Stats) :-
+    best_move(S, Depth, [], Move, Value, Tree, Stats).
 
-/*  best_move(+State, +Depth, +ShowDepth, +History, -Move, -Value, -Tree, -Stats)
+/*  best_move(+State, +Depth, +History, -Move, -Value, -Tree, -Stats)
     History: keys of the positions already seen in this game.
     This is the entry point the API calls. It:
       1. resets the counters
@@ -92,14 +92,14 @@ best_move(S, Depth, ShowDepth, Move, Value, Tree, Stats) :-
       flag(ab_nodes, N0, N0 + 1)  -> add 1
       flag(ab_nodes, N, N)        -> just read it
 */
-best_move(S, Depth, ShowDepth, Hist, Move, Value, Tree, Stats) :-
+best_move(S, Depth, Hist, Move, Value, Tree, Stats) :-
     state_turn(S, P),                        % P = the player the AI plays for (MAX)
     inf(Inf), NInf is -Inf,
     flag(ab_nodes, _, 0), flag(ab_pruned, _, 0),
     flag(ab_leaves, _, 0), flag(ab_id, _, 0),
     statistics(cputime, T0),
     state_key(S, K0),
-    ab(S, Depth, NInf, Inf, P, ShowDepth, 0, [K0|Hist], Value, Move, Root0),
+    ab(S, Depth, NInf, Inf, P, 0, [K0|Hist], Value, Move, Root0),
     statistics(cputime, T1),
     Ms is round((T1 - T0) * 1000),           % seconds -> milliseconds
     flag(ab_nodes, N, N), flag(ab_pruned, Pr, Pr), flag(ab_leaves, L, L),
@@ -107,24 +107,23 @@ best_move(S, Depth, ShowDepth, Hist, Move, Value, Tree, Stats) :-
     mark_path(Root1, Tree),
     % _{key:value, ...} is an SWI-Prolog DICT (like a JSON object / Python dict).
     % It is turned into JSON directly for the website.
-    Stats = _{nodes:N, pruned:Pr, leaves:L, time_ms:Ms, depth:Depth, show_depth:ShowDepth}.
+    Stats = _{nodes:N, pruned:Pr, leaves:L, time_ms:Ms, depth:Depth}.
 
-/*  ab(+State, +Depth, +Alpha, +Beta, +Player, +ShowDepth, +Ply, +Seen, -Value, -BestMove, -Node)
+/*  ab(+State, +Depth, +Alpha, +Beta, +Player, +Ply, +Seen, -Value, -BestMove, -Node)
     The alpha-beta search of ONE node.
       Depth      how many more plies we may search (stops at 0)
       Player     the root player (MAX); never changes during the search
-      ShowDepth  how many more plies are drawn in the tree (stops at -1)
       Ply        how deep this node is (root = 0), shown on the website
       Seen       keys of positions on the path + game history (repetitions)
-      Node       the tree node (a dict), or the atom none when not drawn
+      Node       the tree node (a dict) for the website
 
     Two cases:
       LEAF: depth used up, game over, or no legal move
             -> score with evaluate/4 (the heuristic)
       INNER NODE: generate the moves, sort them (good ones first) and let
-            loop/18 search them one by one.
+            loop/17 search them one by one.
 */
-ab(S, D, A, B, P, TD, Ply, H, V, Best, Node) :-
+ab(S, D, A, B, P, Ply, H, V, Best, Node) :-
     flag(ab_nodes, N0, N0 + 1),
     flag(ab_id, Id, Id + 1),                 % unique id for the website
     state_turn(S, T),
@@ -141,24 +140,19 @@ ab(S, D, A, B, P, TD, Ply, H, V, Best, Node) :-
         % start value: MAX starts from -inf (anything is better),
         %              MIN starts from +inf (anything is lower)
         ( IsMax == true -> Init is -Inf ; Init = Inf ),
-        loop(Ms, IsMax, S, D, A, B, P, TD, Ply, H, 0, Init, -1, V, BI, Kids0, none, Best),
-        exclude(==(none), Kids0, Kids),      % drop children that are not drawn
+        loop(Ms, IsMax, S, D, A, B, P, Ply, H, 0, Init, -1, V, BI, Kids, none, Best),
         Status = explored
     ),
     flag(ab_nodes, N1, N1),
     Sub is N1 - N0,                          % how many nodes were searched below this one
-    (   TD >= 0
-    ->  % still inside the drawn part of the tree: build the node dict
-        state_board(S, Bd), board_string(Bd, BS),
-        state_phase(S, Phase),
-        Node = _{ id:Id, board:BS, turn:T, phase:Phase, max:IsMax,
-                  alpha:A, beta:B, score:V, status:Status,
-                  best:BI, subtree:Sub, ply:Ply, children:Kids,
-                  move:null, label:"start", captured:[] }
-    ;   Node = none
-    ).
+    state_board(S, Bd), board_string(Bd, BS),
+    state_phase(S, Phase),
+    Node = _{ id:Id, board:BS, turn:T, phase:Phase, max:IsMax,
+              alpha:A, beta:B, score:V, status:Status,
+              best:BI, subtree:Sub, ply:Ply, children:Kids,
+              move:null, label:"start", captured:[] }.
 
-/*  loop(Moves, IsMax, State, Depth, A, B, Player, ShowDepth, Ply, Seen,
+/*  loop(Moves, IsMax, State, Depth, A, B, Player, Ply, Seen,
          Index, BestV0, BestI0, BestV, BestI, Kids, BestM0, BestM)
 
     Goes through the moves one by one (recursion on the list).
@@ -169,20 +163,20 @@ ab(S, D, A, B, P, TD, Ply, H, V, Best, Node) :-
     For each move M:
       1. play it -> S1
       2. if S1 is a repeated position -> score it with a penalty (repetition_leaf)
-         otherwise -> search it recursively with ab/11 (one depth less)
+         otherwise -> search it recursively with ab/10 (one depth less)
       3. if the score is better than the best so far, remember it
       4. update the window:  MAX raises Alpha,  MIN lowers Beta
       5. if A >= B -> CUT-OFF: stop, mark the remaining moves as pruned
          else       -> continue with the next move
 */
-loop([], _, _, _, _, _, _, _, _, _, _, BV, BI, BV, BI, [], BM, BM).
-loop([M|Ms], IsMax, S, D, A, B, P, TD, Ply, H, I, BV0, BI0, BV, BI, [K|Ks], BM0, BM) :-
+loop([], _, _, _, _, _, _, _, _, _, BV, BI, BV, BI, [], BM, BM).
+loop([M|Ms], IsMax, S, D, A, B, P, Ply, H, I, BV0, BI0, BV, BI, [K|Ks], BM0, BM) :-
     apply_move(S, M, S1, Caps),                                   % 1
-    D1 is D - 1, TD1 is TD - 1, Ply1 is Ply + 1,
+    D1 is D - 1, Ply1 is Ply + 1,
     state_key(S1, Key1),
     (   state_phase(S1, move), memberchk(Key1, H)                 % 2
-    ->  repetition_leaf(S, S1, P, A, B, TD1, Ply1, V1, K0)
-    ;   ab(S1, D1, A, B, P, TD1, Ply1, [Key1|H], V1, _, K0)
+    ->  repetition_leaf(S, S1, P, A, B, Ply1, V1, K0)
+    ;   ab(S1, D1, A, B, P, Ply1, [Key1|H], V1, _, K0)
     ),
     attach_move(K0, M, Caps, K),
     (   improves(IsMax, V1, BV0)                                  % 3
@@ -196,18 +190,18 @@ loop([M|Ms], IsMax, S, D, A, B, P, TD, Ply, H, I, BV0, BI0, BV, BI, [K|Ks], BM0,
     (   A1 >= B1, Ms \== []                                       % 5
     ->  % Alpha-beta cut-off: the remaining siblings are never searched.
         length(Ms, NP), flag(ab_pruned, X, X + NP),
-        pruned_kids(Ms, S, TD1, Ply1, A1, B1, Ks),
+        pruned_kids(Ms, S, Ply1, A1, B1, Ks),
         BV = BV1, BI = BI1, BM = BM1
     ;   I1 is I + 1,
-        loop(Ms, IsMax, S, D, A1, B1, P, TD, Ply, H, I1, BV1, BI1, BV, BI, Ks, BM1, BM)
+        loop(Ms, IsMax, S, D, A1, B1, P, Ply, H, I1, BV1, BI1, BV, BI, Ks, BM1, BM)
     ).
 
-%   repetition_leaf(+Parent, +State, +Player, +A, +B, +ShowDepth, +Ply, -Value, -Node)
+%   repetition_leaf(+Parent, +State, +Player, +A, +B, +Ply, -Value, -Node)
 %   A position seen before: score it statically, minus the contempt penalty
 %   for whichever side chose to repeat.
 %   If the AI (P) repeats -> its score gets WORSE (-40), so it avoids it.
 %   If the opponent repeats -> good for the AI (+40).
-repetition_leaf(S0, S, P, A, B, TD, Ply, V, Node) :-
+repetition_leaf(S0, S, P, A, B, Ply, V, Node) :-
     flag(ab_nodes, N, N + 1),
     flag(ab_leaves, L, L + 1),
     flag(ab_id, Id, Id + 1),
@@ -215,15 +209,12 @@ repetition_leaf(S0, S, P, A, B, TD, Ply, V, Node) :-
     contempt(C),
     state_turn(S0, Mover),                   % who made the move into the repeated position
     ( Mover == P -> V is E - C ; V is E + C ),
-    (   TD >= 0
-    ->  state_board(S, Bd), board_string(Bd, BS),
-        state_turn(S, T), state_phase(S, Phase),
-        Node = _{ id:Id, board:BS, turn:T, phase:Phase, max:null,
-                  alpha:A, beta:B, score:V, status:repeat,
-                  best:(-1), subtree:1, ply:Ply, children:[],
-                  move:null, label:"", captured:[] }
-    ;   Node = none
-    ).
+    state_board(S, Bd), board_string(Bd, BS),
+    state_turn(S, T), state_phase(S, Phase),
+    Node = _{ id:Id, board:BS, turn:T, phase:Phase, max:null,
+              alpha:A, beta:B, score:V, status:repeat,
+              best:(-1), subtree:1, ply:Ply, children:[],
+              move:null, label:"", captured:[] }.
 
 %   improves(IsMax, NewValue, BestSoFar): is the new value better?
 %   For MAX "better" means bigger, for MIN it means smaller.
@@ -232,9 +223,7 @@ improves(false, V, Best) :- V < Best.
 
 %   pruned_kids: build tree nodes for the moves that were cut off, only so
 %   the website can show them in red. They are NOT searched (score null).
-%   First clause: below the drawn depth -> nothing to draw.
-pruned_kids(_, _, TD, _, _, _, []) :- TD < 0, !.
-pruned_kids(Ms, S, _, Ply, A, B, Ks) :-
+pruned_kids(Ms, S, Ply, A, B, Ks) :-
     findall(K,
             ( member(M, Ms),
               apply_move(S, M, S1, Caps),
@@ -251,7 +240,6 @@ pruned_kids(Ms, S, _, Ply, A, B, Ks) :-
 %   attach_move: write the move that led to a node into its dict
 %   (as JSON, as a label like "c4-c3", and the captured squares).
 %   K0.put(_{...}) returns a NEW dict with those keys added/replaced.
-attach_move(none, _, _, none) :- !.
 attach_move(K0, M, Caps, K) :-
     move_json(M, MJ),
     move_label(M, L),

@@ -702,7 +702,7 @@
   .legend { position: static; max-width: none; margin: 8px; }
 }
 
-/* "− [n] +" number picker used for search depth and tree levels */
+/* "− [n] +" number picker used for the search depth */
 .stepper {
   display: flex;
   align-items: center;

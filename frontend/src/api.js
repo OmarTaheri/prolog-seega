@@ -16,10 +16,10 @@ async function post(path, body = {}) {
 // engine can avoid, and the rules can detect, repeated positions.
 export const newGame = () => post('new')
 export const play = (state, move, history = []) => post('play', { state, move, history })
-export const aiMove = (state, depth, showDepth, history = []) =>
-  post('ai', { state, depth, show_depth: showDepth, history })
-export const hint = (state, depth, showDepth, history = []) =>
-  post('hint', { state, depth, show_depth: showDepth, history })
+export const aiMove = (state, depth, history = []) =>
+  post('ai', { state, depth, history })
+export const hint = (state, depth, history = []) =>
+  post('hint', { state, depth, history })
 
 export const positionKey = (state) => state.board + state.turn
 

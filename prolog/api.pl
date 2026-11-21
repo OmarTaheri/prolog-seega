@@ -131,21 +131,20 @@ dispatch(hint, Req, Resp) :-
              tree:Tree, stats:Stats}.
 
 %   search_request: read the state and the settings from the request and
-%   run best_move. The numbers are clamped to safe limits so a request
-%   cannot ask for a search that takes forever:
-%     depth 1..10 (default 2),  drawn tree depth 1..10 (default 2)
+%   run best_move. The depth is clamped to 1..10 (default 2) so a request
+%   cannot ask for a search that takes forever. Every searched node is
+%   returned in the tree.
 search_request(Req, S, M, V, Tree, Stats) :-
     req_state(Req, S),
     \+ game_over(S),
     req_int(Req, depth, 2, 1, 10, Depth0),
     % The drop phase has ~24 moves per ply, so it is searched less deeply.
-    req_int(Req, show_depth, 2, 1, 10, Show0),
     (   state_phase(S, drop)
-    ->  Depth is min(Depth0, 3), Show is min(Show0, min(2, Depth))
-    ;   Depth = Depth0, Show is min(Show0, Depth)
+    ->  Depth is min(Depth0, 3)
+    ;   Depth = Depth0
     ),
     req_hist(Req, Hist),
-    best_move(S, Depth, Show, Hist, M, V, Tree, Stats),
+    best_move(S, Depth, Hist, M, V, Tree, Stats),
     M \== none.
 
 %   History of position keys sent by the client (positions already played).

@@ -128,7 +128,7 @@ test(ai_takes_free_capture) :-
                 '.....',
                 '...b.',
                 'b...b'], w, S),
-    best_move(S, 2, 1, M, _, Tree, Stats),
+    best_move(S, 2, M, _, Tree, Stats),
     M == move(8, 7),
     get_dict(status, Tree, root),
     get_dict(nodes, Stats, N), N > 1.
@@ -156,7 +156,7 @@ test(search_penalises_repetition) :-
     apply_move(S0, move(24, 23), S1, _),
     state_key(S1, K),
     % With e1-d1 already seen twice, the engine should pick another move.
-    best_move(S0, 1, 1, [K, K], M, _, _, _),
+    best_move(S0, 1, [K, K], M, _, _, _),
     M \== move(24, 23).
 
 %   The JSON door works end to end: {"cmd":"new"} answers ok:true.

@@ -95,7 +95,7 @@ export function SettingsPanel({ settings, set, onNewGame }) {
         </Field>
       )}
       <Field label="AI strength"
-        hint={`Searches ${settings.depth} move${settings.depth > 1 ? 's' : ''} ahead with alpha-beta pruning.${settings.depth >= 9 ? ' Depth 9+ can take several seconds per move.' : ''} The placement phase is always searched at most 3 deep.`}>
+        hint={`Searches ${settings.depth} move${settings.depth > 1 ? 's' : ''} ahead with alpha-beta pruning. The search tree shows every position it searched.${settings.depth >= 8 ? ' Depth 8+ can take several seconds and draws a very large tree.' : ''} The placement phase is always searched at most 3 deep.`}>
         <Segmented value={settings.depth} onChange={(v) => set({ depth: v })}
           options={LEVELS.map((l) => ({ value: l.depth, label: l.label }))} />
         <NumberStepper label="search depth" value={settings.depth} onChange={(v) => set({ depth: v })} />
@@ -104,10 +104,6 @@ export function SettingsPanel({ settings, set, onNewGame }) {
 
       <h4 className="group-title">Learning</h4>
       <Toggle label="Show legal moves" checked={settings.showLegal} onChange={(v) => set({ showLegal: v })} />
-      <Field label="Search tree levels drawn"
-        hint={`Only changes the picture, not the AI's play. Deeper trees show more pruned (red) branches. Capped at the AI's search depth (${settings.depth})${settings.showDepth > settings.depth ? `, so ${settings.depth} levels are drawn` : ''}.${Math.min(settings.showDepth, settings.depth) >= 8 ? ' 8+ levels can mean tens of thousands of nodes: "Expand all" may be slow.' : ''}`}>
-        <NumberStepper label="tree levels" value={settings.showDepth} onChange={(v) => set({ showDepth: v })} />
-      </Field>
 
       <h4 className="group-title">Board</h4>
       <Field label="Theme">

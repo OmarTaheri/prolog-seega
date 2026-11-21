@@ -49,7 +49,6 @@ class PlayRequest(StateRequest):
 
 class SearchRequest(StateRequest):
     depth: int = Field(3, ge=1, le=10)
-    show_depth: int = Field(2, ge=1, le=10)
 
 
 def _check_state(state: dict) -> None:
@@ -90,13 +89,13 @@ def play(req: PlayRequest):
 @app.post("/api/ai")
 def ai_move(req: SearchRequest):
     _check_state(req.state)
-    return _run("ai", state=req.state, depth=req.depth, show_depth=req.show_depth, history=req.history)
+    return _run("ai", state=req.state, depth=req.depth, history=req.history)
 
 
 @app.post("/api/hint")
 def hint(req: SearchRequest):
     _check_state(req.state)
-    return _run("hint", state=req.state, depth=req.depth, show_depth=req.show_depth, history=req.history)
+    return _run("hint", state=req.state, depth=req.depth, history=req.history)
 
 
 # Serve the built frontend last, so /api/* routes take precedence.

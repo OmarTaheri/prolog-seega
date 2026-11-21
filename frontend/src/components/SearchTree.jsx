@@ -37,10 +37,18 @@ function walk(node, fn) {
   node.children.forEach((c) => walk(c, fn))
 }
 
-function defaultOpen(root) {
+// Trees up to this many nodes open fully (every searched level is drawn).
+// Bigger ones (depth 9-10) start on the chosen line so the page stays usable.
+const OPEN_ALL_LIMIT = 8000
+
+function countNodes(root) {
   let count = 0
   walk(root, () => count++)
-  if (count <= 160) {
+  return count
+}
+
+function defaultOpen(root) {
+  if (countNodes(root) <= OPEN_ALL_LIMIT) {
     const open = new Set()
     walk(root, (n) => n.children.length && open.add(n.id))
     return open
@@ -257,9 +265,14 @@ export default function SearchTree({ data }) {
             <span><b>{stats.nodes}</b> nodes searched</span>
             <span><b>{stats.leaves}</b> leaves evaluated</span>
             <span><b>{stats.pruned}</b> branches pruned</span>
-            <span>depth <b>{stats.depth}</b> (drawn: {stats.show_depth})</span>
+            <span>depth <b>{stats.depth}</b></span>
             <span><b>{stats.time_ms}</b> ms</span>
           </div>
+          {byId.size > OPEN_ALL_LIMIT && (
+            <div className="muted">
+              Large tree ({byId.size} nodes): showing the chosen line. Press Expand all to draw everything (may be slow).
+            </div>
+          )}
         </div>
         <div className="tree-buttons">
           <button onClick={() => { userMoved.current = false; focusChosen() }}>◎ Chosen move</button>

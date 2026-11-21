@@ -29,7 +29,7 @@ def test_play_drop_then_ai_returns_tree():
     r = client.post("/api/play", json={"state": state, "move": {"type": "drop", "to": 0}})
     assert r.status_code == 200
     state = r.json()["state"]
-    r = client.post("/api/ai", json={"state": state, "depth": 2, "show_depth": 2})
+    r = client.post("/api/ai", json={"state": state, "depth": 2})
     assert r.status_code == 200
     data = r.json()
     assert data["tree"]["status"] == "root"
