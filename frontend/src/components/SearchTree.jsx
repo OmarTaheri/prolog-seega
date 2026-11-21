@@ -37,26 +37,8 @@ function walk(node, fn) {
   node.children.forEach((c) => walk(c, fn))
 }
 
-// Trees up to this many nodes open fully (every searched level is drawn).
-// Bigger ones (depth 9-10) start on the chosen line so the page stays usable.
-const OPEN_ALL_LIMIT = 8000
-
-function countNodes(root) {
-  let count = 0
-  walk(root, () => count++)
-  return count
-}
-
-function defaultOpen(root) {
-  if (countNodes(root) <= OPEN_ALL_LIMIT) {
-    const open = new Set()
-    walk(root, (n) => n.children.length && open.add(n.id))
-    return open
-  }
-  // Large trees: show the root's options and the principal variation.
-  return pvOpen(root)
-}
-
+// The collapsed view (the default): the root's options plus the chosen
+// line (principal variation) all the way down.
 function pvOpen(root) {
   const open = new Set([root.id])
   let n = root
@@ -104,7 +86,7 @@ function MiniBoard({ node }) {
 
 export default function SearchTree({ data }) {
   const { tree, stats, side, by, label, played, playedLabel } = data
-  const [open, setOpen] = useState(() => defaultOpen(tree))
+  const [open, setOpen] = useState(() => pvOpen(tree))
   const [step, setStep] = useState(null)
   const svgRef = useRef(null)
   const gRef = useRef(null)
@@ -268,11 +250,10 @@ export default function SearchTree({ data }) {
             <span>depth <b>{stats.depth}</b></span>
             <span><b>{stats.time_ms}</b> ms</span>
           </div>
-          {byId.size > OPEN_ALL_LIMIT && (
-            <div className="muted">
-              Large tree ({byId.size} nodes): showing the chosen line. Press Expand all to draw everything (may be slow).
-            </div>
-          )}
+          <div className="muted">
+            {tree.phase === 'drop' && 'Placement phase: always searched at most 3 deep. '}
+            {nodes.length < byId.size && `Showing ${nodes.length} of ${byId.size} nodes. Expand all draws the whole tree (may be slow).`}
+          </div>
         </div>
         <div className="tree-buttons">
           <button onClick={() => { userMoved.current = false; focusChosen() }}>◎ Chosen move</button>
