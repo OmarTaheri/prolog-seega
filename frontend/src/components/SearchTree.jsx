@@ -166,6 +166,31 @@ export default function SearchTree({ data }) {
     apply(zoomIdentity.translate(width / 2 - n.x * k, height / 2 - (n.y + NODE_H / 2) * k).scale(k), true)
   }, [layout, apply])
 
+  // Bring the tree back into view: the root at the top centre. Keeps the
+  // current zoom if it is readable, otherwise zooms to a readable size.
+  const centreTree = useCallback((animate = true) => {
+    const svg = svgRef.current
+    if (!svg || !zoomRef.current) return
+    const { width } = svg.getBoundingClientRect()
+    if (!width) return
+    const k = Math.min(1.25, Math.max(0.6, zoomTransform(svg).k))
+    apply(zoomIdentity.translate(width / 2 - layout.x * k, 24).scale(k), animate)
+  }, [layout, apply])
+
+  // Centre once the layout has changed (used after Collapse).
+  const centreAfterLayout = useRef(false)
+  useEffect(() => {
+    if (!centreAfterLayout.current) return
+    centreAfterLayout.current = false
+    centreTree()
+  }, [centreTree])
+
+  function collapse() {
+    setOpen(pvOpen(tree))
+    userMoved.current = true
+    centreAfterLayout.current = true
+  }
+
   useEffect(() => {
     const z = zoom()
       .scaleExtent([0.08, 4])
@@ -261,7 +286,8 @@ export default function SearchTree({ data }) {
           <button onClick={replay} disabled={step !== null && step < maxId}>▶ Replay search</button>
           {step !== null && <button onClick={() => setStep(null)}>Show all</button>}
           <button onClick={expandAll}>Expand all</button>
-          <button onClick={() => setOpen(pvOpen(tree))}>Collapse</button>
+          <button onClick={collapse}>Collapse</button>
+          <button onClick={() => { userMoved.current = true; centreTree() }}>⌖ Center</button>
         </div>
       </div>
 
