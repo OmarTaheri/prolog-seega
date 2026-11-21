@@ -7,6 +7,7 @@ export const LEVELS = [
   { depth: 2, label: 'Medium' },
   { depth: 3, label: 'Hard' },
   { depth: 5, label: 'Expert' },
+  { depth: 7, label: 'Master' },
 ]
 
 function Segmented({ value, options, onChange }) {
@@ -18,6 +19,36 @@ function Segmented({ value, options, onChange }) {
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+// The server accepts depths 1..MAX_DEPTH (see prolog/api.pl and backend/main.py).
+export const MAX_DEPTH = 10
+export const clampDepth = (v, fallback = 1) => {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) ? Math.min(MAX_DEPTH, Math.max(1, n)) : fallback
+}
+
+// A "− [n] +" picker for any whole number between 1 and MAX_DEPTH.
+function NumberStepper({ value, onChange, label }) {
+  const [text, setText] = useState(String(value))
+  const [prev, setPrev] = useState(value)
+  if (prev !== value) { setPrev(value); setText(String(value)) }
+  const commit = (raw) => {
+    const v = clampDepth(raw, value)
+    setText(String(v))
+    if (v !== value) onChange(v)
+  }
+  return (
+    <div className="stepper">
+      <button aria-label={`Decrease ${label}`} disabled={value <= 1} onClick={() => onChange(value - 1)}>−</button>
+      <input type="number" min={1} max={MAX_DEPTH} step={1} aria-label={label} value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && commit(e.currentTarget.value)} />
+      <button aria-label={`Increase ${label}`} disabled={value >= MAX_DEPTH} onClick={() => onChange(value + 1)}>+</button>
+      <span className="stepper-range">1–{MAX_DEPTH}</span>
     </div>
   )
 }
@@ -63,17 +94,19 @@ export function SettingsPanel({ settings, set, onNewGame }) {
           ]} />
         </Field>
       )}
-      <Field label="AI strength" hint={`Searches ${settings.depth} move${settings.depth > 1 ? 's' : ''} ahead with alpha-beta pruning.`}>
+      <Field label="AI strength"
+        hint={`Searches ${settings.depth} move${settings.depth > 1 ? 's' : ''} ahead with alpha-beta pruning.${settings.depth >= 9 ? ' Depth 9+ can take several seconds per move.' : ''} The placement phase is always searched at most 3 deep.`}>
         <Segmented value={settings.depth} onChange={(v) => set({ depth: v })}
           options={LEVELS.map((l) => ({ value: l.depth, label: l.label }))} />
+        <NumberStepper label="search depth" value={settings.depth} onChange={(v) => set({ depth: v })} />
       </Field>
       <button className="btn primary wide" onClick={onNewGame}>Start a new game</button>
 
       <h4 className="group-title">Learning</h4>
       <Toggle label="Show legal moves" checked={settings.showLegal} onChange={(v) => set({ showLegal: v })} />
-      <Field label="Search tree levels drawn" hint="Deeper trees show more pruned (red) branches.">
-        <Segmented value={settings.showDepth} onChange={(v) => set({ showDepth: v })}
-          options={[1, 2, 3].map((d) => ({ value: d, label: String(d) }))} />
+      <Field label="Search tree levels drawn"
+        hint={`Only changes the picture, not the AI's play. Deeper trees show more pruned (red) branches. Capped at the AI's search depth (${settings.depth})${settings.showDepth > settings.depth ? `, so ${settings.depth} levels are drawn` : ''}.${Math.min(settings.showDepth, settings.depth) >= 8 ? ' 8+ levels can mean tens of thousands of nodes: "Expand all" may be slow.' : ''}`}>
+        <NumberStepper label="tree levels" value={settings.showDepth} onChange={(v) => set({ showDepth: v })} />
       </Field>
 
       <h4 className="group-title">Board</h4>

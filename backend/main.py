@@ -48,8 +48,8 @@ class PlayRequest(StateRequest):
 
 
 class SearchRequest(StateRequest):
-    depth: int = Field(3, ge=1, le=6)
-    show_depth: int = Field(2, ge=1, le=3)
+    depth: int = Field(3, ge=1, le=10)
+    show_depth: int = Field(2, ge=1, le=10)
 
 
 def _check_state(state: dict) -> None:

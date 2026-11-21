@@ -3,7 +3,7 @@ import * as api from './api'
 import { positionKey, sideName } from './api'
 import Board from './components/Board'
 import SearchTree from './components/SearchTree'
-import { InfoPanel, LEVELS, MovesPanel, SettingsPanel, StatsPanel } from './components/Panels'
+import { clampDepth, InfoPanel, LEVELS, MovesPanel, SettingsPanel, StatsPanel } from './components/Panels'
 import {
   IconArrowLeft, IconBulb, IconFlip, IconGame, IconInfo, IconMoves, IconMute,
   IconNew, IconNext, IconPause, IconPlay, IconPrev, IconSettings, IconStats, IconStop,
@@ -31,6 +31,8 @@ function loadSettings() {
   try {
     const saved = { ...DEFAULTS, ...JSON.parse(localStorage.getItem('seega-settings') || '{}') }
     if (!THEMES.includes(saved.theme)) saved.theme = DEFAULTS.theme
+    saved.depth = clampDepth(saved.depth, DEFAULTS.depth)
+    saved.showDepth = clampDepth(saved.showDepth, DEFAULTS.showDepth)
     return saved
   } catch {
     return DEFAULTS

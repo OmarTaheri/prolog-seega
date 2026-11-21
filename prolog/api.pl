@@ -133,13 +133,13 @@ dispatch(hint, Req, Resp) :-
 %   search_request: read the state and the settings from the request and
 %   run best_move. The numbers are clamped to safe limits so a request
 %   cannot ask for a search that takes forever:
-%     depth 1..6 (default 2),  drawn tree depth 1..3 (default 2)
+%     depth 1..10 (default 2),  drawn tree depth 1..10 (default 2)
 search_request(Req, S, M, V, Tree, Stats) :-
     req_state(Req, S),
     \+ game_over(S),
-    req_int(Req, depth, 2, 1, 6, Depth0),
+    req_int(Req, depth, 2, 1, 10, Depth0),
     % The drop phase has ~24 moves per ply, so it is searched less deeply.
-    req_int(Req, show_depth, 2, 1, 3, Show0),
+    req_int(Req, show_depth, 2, 1, 10, Show0),
     (   state_phase(S, drop)
     ->  Depth is min(Depth0, 3), Show is min(Show0, min(2, Depth))
     ;   Depth = Depth0, Show is min(Show0, Depth)

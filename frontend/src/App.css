@@ -701,3 +701,32 @@
   .icon-btn { width: 34px; height: 34px; }
   .legend { position: static; max-width: none; margin: 8px; }
 }
+
+/* "− [n] +" number picker used for search depth and tree levels */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.stepper button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  background: #f0f2f5;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stepper button:disabled { opacity: 0.4; cursor: default; }
+.stepper input {
+  width: 56px;
+  height: 32px;
+  text-align: center;
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid #d5d9e0;
+  border-radius: 9px;
+}
+.stepper-range { font-size: 12px; color: #8a94a3; }

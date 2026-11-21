@@ -22,7 +22,7 @@ move of a game can be replayed together with the search tree the engine used.
 - **Complete Seega rules in Prolog**: placement phase (two stones per turn, centre stays empty),
   movement phase, custodian captures in several directions at once, capture chains, the
   immune centre square, extra turns when a player is blocked, and game-end rules.
-- **Minimax with alpha-beta pruning**, depth 1–5, with move ordering and a heuristic that
+- **Minimax with alpha-beta pruning**, depth 1–10 (any number), with move ordering and a heuristic that
   scores material, safe squares, mobility and threats.
 - **Search tree visualisation**: every position the engine examined, drawn as a mini board.
   Pruned branches are red, the chosen line is green, and repeated positions are purple.
