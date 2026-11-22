@@ -356,17 +356,11 @@ adj(24, left, 23).`,
         box('105 facts', '25 × <code>coord/3</code><br>80 × <code>adj/3</code>', 'inv')),
       note: 'The knowledge base is <b>generated while the file loads</b>, exactly as if we had typed it.',
     },
-    ...steps({ type: 'code', title: '<code>term_expansion</code>', lang: 'prolog', code: TERM_EXP, size: 26 }, [
-      { t: '1. the trigger', show: '1,16', h: '1,16', note: 'When Prolog reads <code>generate_kb.</code> it asks <code>term_expansion(generate_kb, Facts)</code> and loads <code>Facts</code> instead.' },
-      { t: '2. coord', show: '1-5', h: '2-5', note: 'Two <code>between</code>s = two for-loops: R = 0 … 4, C = 0 … 4 → <code>coord(I, R, C)</code> with I = R*5 + C.' },
-      {
-        t: '3. adj, only on the board', show: '1,6-13', h: '6-13', type: 'split', size: 24, ratio: 1.45,
-        diagram: fig(grid({ size: 68, nums: true, pad: 62, board: B('w....', '.....', '.....', '.....', '.....'),
-          arrows: [[0, 'up', 'no'], [0, 'left', 'no'], [0, 5], [0, 1]] }),
-          'square 0: up / left give −1<br><code>between(0, 4, -1)</code> fails → skipped'),
-      },
-      { t: '4. append → the facts', show: '1,14-16', h: '14', note: '25 coord + 80 adj are glued into one list, and that list replaces <code>generate_kb.</code>' },
-    ]),
+    {
+      type: 'code', title: '<code>term_expansion</code>', lang: 'prolog', code: TERM_EXP, size: 24,
+      note: 'Prolog reads <code>generate_kb.</code> → asks <code>term_expansion</code> → loads the 25 <code>coord</code> + 80 <code>adj</code> facts instead. ' +
+        '<code>between(0, 4, R2)</code> fails for −1 or 5, so steps off the board are skipped.',
+    },
     {
       type: 'stack', title: '<code>corner</code> and <code>edge</code>', lang: 'prolog', size: 24,
       code: R`

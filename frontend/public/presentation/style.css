@@ -93,19 +93,22 @@ html, body {
 .ln .no { width: 2.2em; flex: none; color: #444; text-align: right; padding-right: 1em; user-select: none; }
 .ln.dim { opacity: .3; }
 .ln.gap { color: #555; }
-.ln.hl { background: #1d1d1d; border-left-color: #fff; }
+.ln.hl { background: #2a2d2e; border-left-color: #fff; }
 .nolines .ln .no { display: none; }
 
-/* syntax colours: black & white only, told apart by weight / style / grey level */
-.k-com { color: #7c7c7c; font-style: italic; }
-.k-str { color: #d2d2d2; }
-.k-num { color: #bdbdbd; }
-.k-var { color: #fff; font-weight: 700; }
-.k-fn  { color: #fff; font-weight: 700; text-decoration: underline; text-decoration-color: #555; text-underline-offset: 4px; }
-.k-atom { color: #d9d9d9; }
-.k-op  { color: #fff; font-weight: 700; }
-.k-kw  { color: #fff; font-weight: 700; }
-.k-p   { color: #8f8f8f; }
+/* syntax colours: VS Code "Dark+" theme */
+.codebox { background: #1e1e1e; border-color: #333; color: #d4d4d4; }
+.exbox { color: #d4d4d4; }
+.ln .no { color: #6e7681; }
+.k-com { color: #6a9955; font-style: italic; }   /* comments: green */
+.k-str { color: #ce9178; }                       /* strings: orange */
+.k-num { color: #b5cea8; }                       /* numbers: light green */
+.k-var { color: #9cdcfe; }                       /* Variables: light blue */
+.k-fn  { color: #dcdcaa; }                       /* predicate names: yellow */
+.k-atom { color: #4ec9b0; }                      /* atoms: teal */
+.k-op  { color: #c586c0; }                       /* :- -> ; ! \+ : purple */
+.k-kw  { color: #569cd6; }                       /* keywords: blue */
+.k-p   { color: #d4d4d4; }                       /* punctuation */
 
 /* ---------- diagrams ---------- */
 .dia { display: flex; flex-direction: column; align-items: center; gap: 22px; font-size: 26px; }
