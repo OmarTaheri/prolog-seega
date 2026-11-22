@@ -485,10 +485,10 @@ captures_for(B, T, To, Caps) :-
     other(T, O),                  % O = the enemy
     findall(N,
             ( adj(To, D, N),      % N  = next square in direction D
-              cell(N, B, O),      % N is an enemy stone
-              \+ centre(N),       % ... not on the centre
-              adj(N, D, N2),      % N2 = one more step, SAME direction
-              cell(N2, B, T) ),   % N2 is my stone -> sandwich!
+              cell(N, B, O),      % 1. is N an enemy stone?
+              \+ centre(N),       % 2. ...not on the centre?
+              adj(N, D, N2),      % N2 = the square after it, SAME D
+              cell(N2, B, T) ),   % 3. is N2 my stone?
             Caps).`;
 
   const capGrid = (o) => fig(grid(Object.assign({ size: 82, nums: true, board: CAP_BOARD, ring: [7] }, o)), o.cap || '');
@@ -603,11 +603,29 @@ slide_moves(B, T, Moves) :-
         fig(grid({ size: 66, board: B('.....', '.....', '.wbw.', '.....', '.....') }), 'on the centre: <b>never</b> captured')),
       note: 'Only a stone that <b>moves</b> into place captures. Lines are straight: no diagonals.',
     },
-    ...steps({ type: 'split', title: '<code>captures_for</code>', lang: 'prolog', code: CAPS, size: 22, ratio: 2.05 }, [
-      { t: '1. one square away', h: '2,4', diagram: capGrid({ arrows: [[7, 2], [7, 12], [7, 6], [7, 8]], cap: 'white just moved onto <b>7</b>: look at 2, 12, 6, 8' }) },
-      { t: '2. enemy, not centre', h: '5-6', diagram: capGrid({ arrows: [[7, 2, 'no'], [7, 12, 'no'], [7, 6], [7, 8]], cap: '2 is mine ✕ · 12 is the centre ✕' }) },
-      { t: '3. same direction → captured', h: '7-9', ex: R`Caps = [8].`, diagram: capGrid({ arrows: [[6, 5, 'no'], [7, 8], [8, 9]], cross: [8], cap: 'left: 5 is empty ✕ · right: 9 is white ✓' }) },
-    ]),
+    cases('<code>captures_for</code>: 3 questions per direction', [
+      ['is the <b>next</b> square an enemy stone?', 'no → nothing in this direction'],
+      ['is it <b>not</b> on the centre?', 'no → the centre is safe'],
+      ['is the square <b>after it</b> my stone?', 'yes → <b>captured</b>'],
+    ], 'White just moved a stone onto <code>To</code>. It looks up, down, left and right and asks these 3 questions each time.'),
+    {
+      type: 'split', title: '<code>captures_for</code>', lang: 'prolog', code: CAPS, size: 22, ratio: 2.05,
+      ex: R`Caps = [8].`,
+      diagram: capGrid({ cross: [8], cap: 'white moved onto <b>7</b> → captures <b>8</b>' }),
+      note: '<code>findall</code> tries all 4 directions and keeps every <code>N</code> that passes the 3 questions. The same <code>D</code> twice = a straight line.',
+    },
+    {
+      type: 'diagram', title: '<code>captures_for</code>: direction by direction',
+      diagram: row(
+        capGrid({ arrows: [[7, 2], [7, 12], [7, 6], [7, 8]], cap: 'white just moved onto <b>7</b>' }),
+        table(['direction', 'next square', 'after it', 'captured?'], [
+          ['up', '2 = white ✕', '–', 'no'],
+          ['down', '12 = black, <b>centre</b> ✕', '–', 'no'],
+          ['left', '6 = black ✓', '5 = empty ✕', 'no'],
+          ['right', '8 = black ✓', '9 = white ✓', '<b>yes → 8</b>'],
+        ], 'big')),
+      note: 'Only the right side closes the sandwich, so <code>Caps = [8]</code>.',
+    },
     {
       type: 'stack', title: '<code>move_captures</code>: “what if?”', lang: 'prolog', size: 25,
       code: R`
