@@ -682,63 +682,63 @@ N = 2`,
       ['<code>move(From, To)</code>', 'slide one square, maybe capture (move phase)'],
       ['<code>stop</code>', 'end a capture chain'],
     ], 'One <code>apply_move_</code> clause per kind. An illegal move simply fails.'),
-    ...steps({
-      type: 'code', title: '<code>apply_move</code>: a drop', lang: 'prolog', size: 24,
+    {
+      type: 'code', title: '<code>apply_move</code>: a drop', lang: 'prolog', size: 21,
       code: R`
 apply_move(S0, M, S, Caps) :-
-    apply_move_(S0, M, S, Caps), !.
+    apply_move_(S0, M, S, Caps), !.          % ! = one answer, no leftover choices
 
 apply_move_(s(B0, drop, T, HW0, HB0, DL0, Ch, NC, W, _), drop(I), S, []) :-
-    cell(I, B0, e), \+ centre(I),
-    hand(T, HW0, HB0, H), H > 0,
-    set_cell(I, T, B0, B),
-    dec_hand(T, HW0, HB0, HW, HB),
-    DL1 is DL0 - 1,
-    drops_per_turn(DPT),
-    (   HW =:= 0, HB =:= 0
-    ->  resolve_turn(s(B, move, b, 0, 0, 0, none, 0, W, false), S)
-    ;   DL1 =:= 0
-    ->  other(T, O), S = s(B, drop, O, HW, HB, DPT, Ch, NC, W, false)
-    ;   S = s(B, drop, T, HW, HB, DL1, Ch, NC, W, false)
+    cell(I, B0, e), \+ centre(I),             % the square is empty and not the centre
+    hand(T, HW0, HB0, H), H > 0,              % I still have a stone in my hand
+    set_cell(I, T, B0, B),                    % put my stone on the board
+    dec_hand(T, HW0, HB0, HW, HB),            % one stone less in my hand
+    DL1 is DL0 - 1,                           % one drop less this turn
+    drops_per_turn(DPT),                      % DPT = 2
+    (   HW =:= 0, HB =:= 0                    % all 24 placed:
+    ->  resolve_turn(s(B, move, b, 0, 0, 0, none, 0, W, false), S)     %  move phase, black first
+    ;   DL1 =:= 0                             % my 2nd drop:
+    ->  other(T, O), S = s(B, drop, O, HW, HB, DPT, Ch, NC, W, false)  %  other player, 2 drops
+    ;   S = s(B, drop, T, HW, HB, DL1, Ch, NC, W, false)               % my 1st drop: I drop again
     ).`,
-    }, [
-      { t: '1. allowed?', show: '1-6', h: '1-2,5-6', note: '<b>Why the <code>!</code>?</b> Once a result is found, forget the other ways: no leftover choice points. The AI calls <code>apply_move</code> thousands of times, so this saves memory and time. Lines 5–6: empty, not the centre, a stone in hand, otherwise the move fails.' },
-      { t: '2. place it', show: '4,7-10', h: '7-10', note: 'Stone on the board, one less in hand, one drop less this turn.' },
-      { t: '3. who drops next', show: '4,11-16', h: '11-16', note: '<ul style="margin-left:30px;line-height:1.55">' +
-        '<li><code>HW =:= 0, HB =:= 0</code> → all 24 stones placed → <b>move phase</b>, black moves first</li>' +
-        '<li><code>DL1 =:= 0</code> → 2nd drop of the turn done → <b>the other player</b> gets 2 drops</li>' +
-        '<li>otherwise → only the 1st drop → <b>the same player</b> drops once more</li></ul>' },
-    ]),
+    },
     cases('After a drop: who plays?', [
       ['all 24 stones placed', 'move phase starts, <b>black</b> moves first'],
       ['2nd drop of the turn done', 'the other player gets 2 drops'],
       ['1st drop of the turn done', 'same player drops once more'],
     ], 'Lines 11–16 of the drop clause: an if / else if / else.'),
-    ...steps({
-      type: 'code', title: '<code>apply_move</code>: a slide', lang: 'prolog', size: 24,
+    {
+      type: 'code', title: '<code>apply_move</code>: a slide', lang: 'prolog', size: 21,
       code: R`
 apply_move_(s(B0, move, T, HW, HB, DL, Ch, NC0, W, _), move(F, To), S, Caps) :-
-    cell(F, B0, T), adj(F, _, To), cell(To, B0, e),     % step 1
-    ( Ch == none -> true ; F == Ch ),                   % step 2: chain stone only
-    move_captures(B0, T, F, To, Caps),
-    ( Ch == none -> true ; Caps \== [] ),               % step 2: chain move must capture
-    set_cell(F, e, B0, B1),                             % step 3
-    set_cell(To, T, B1, B2),
-    remove_pieces(Caps, B2, B),
-    ( Caps == [] -> NC is NC0 + 1 ; NC = 0 ),           % step 4
+    cell(F, B0, T), adj(F, _, To), cell(To, B0, e),   % my stone, a neighbour, empty
+    ( Ch == none -> true ; F == Ch ),                 % in a chain: only the chain stone
+    move_captures(B0, T, F, To, Caps),                % what does this move capture?
+    ( Ch == none -> true ; Caps \== [] ),             % in a chain: it must capture
+    set_cell(F, e, B0, B1),                           % lift the stone
+    set_cell(To, T, B1, B2),                          % put it on To
+    remove_pieces(Caps, B2, B),                       % remove the captured stones
+    ( Caps == [] -> NC is NC0 + 1 ; NC = 0 ),         % quiet moves: +1, or 0 after a capture
     other(T, O),
-    (   Caps \== [],                                    % step 5
-        piece_count(B, O, NO), NO > 0,
-        can_capture_from(B, T, To)
-    ->  % Multi-capture chain: the same piece may keep capturing.
-        S = s(B, move, T, HW, HB, DL, To, NC, W, false)
-    ;   end_turn(s(B, move, T, HW, HB, DL, none, NC, W, false), S)
+    (   Caps \== [],                                  % I captured,
+        piece_count(B, O, NO), NO > 0,                % the enemy still has stones,
+        can_capture_from(B, T, To)                    % and this stone can capture again:
+    ->  S = s(B, move, T, HW, HB, DL, To, NC, W, false)             %  chain: still my turn
+    ;   end_turn(s(B, move, T, HW, HB, DL, none, NC, W, false), S)  %  else: next player
     ).`,
-    }, [
-      { t: '1. legal + chain rules', show: '1-5', h: '2-5', note: 'My stone, a neighbour, empty. In a chain: only the chain stone, and it must capture.' },
-      { t: '2. move, remove, count', show: '1,6-9', h: '6-9', note: 'No capture → quiet counter + 1. A capture → back to 0.' },
-      { t: '3. chain or next player', show: '1,10-17', h: '10-17', note: 'Captured and the same stone can capture again → still my turn, Chain = To.' },
-    ]),
+    },
+    {
+      type: 'code', title: '<code>apply_move</code>: stop', lang: 'prolog', size: 22,
+      code: R`
+apply_move_(s(B, move, T, HW, HB, DL, Ch, NC, W, _), stop, S, []) :-
+    Ch \== none,                                                % only inside a capture chain
+    end_turn(s(B, move, T, HW, HB, DL, none, NC, W, false), S). % end the chain, next player
+
+end_turn(s(B, move, T, HW, HB, DL, _, NC, W, _), S) :-
+    other(T, O),                                                % the opponent
+    resolve_turn(s(B, move, O, HW, HB, DL, none, NC, W, false), S).   % their turn (if they can move)`,
+      note: 'Continuing a chain is optional: <code>stop</code> passes the turn. Every turn change goes through <code>resolve_turn</code>.',
+    },
     {
       type: 'diagram', title: '<code>resolve_turn</code>: who plays next?',
       diagram: `<div class="flow">` + [
