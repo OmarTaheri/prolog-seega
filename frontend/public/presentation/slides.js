@@ -489,19 +489,13 @@ captures_for(B, T, To, Caps) :-
   S.push(...sec('rules.pl', [
     { type: 'section', num: '03', title: '<code>rules.pl</code>', sub: 'What is allowed, and what happens after a move' },
     {
-      type: 'stack', title: 'The game state: 10 slots', lang: 'prolog', size: 25,
-      code: R`s(Board, Phase, Turn, HandW, HandB, DropsLeft, Chain, NoCapture, Winner, Extra)`,
-      diagram: table(['#', 'slot', 'meaning'], [
-        ['1', '<code>Board</code>', 'the <code>b/25</code> term'],
-        ['2', '<code>Phase</code>', '<code>drop</code> · <code>move</code> · <code>over</code>'],
-        ['3', '<code>Turn</code>', '<code>w</code> or <code>b</code>'],
-        ['4 5', '<code>HandW</code> <code>HandB</code>', 'stones still to place'],
-        ['6', '<code>DropsLeft</code>', 'drops left this turn: 2 → 1 → 0'],
-        ['7', '<code>Chain</code>', '<code>none</code>, or the square of the stone in a capture chain'],
-        ['8', '<code>NoCapture</code>', 'moves in a row without a capture (50 = end)'],
-        ['9', '<code>Winner</code>', '<code>none</code> · <code>w</code> · <code>b</code> · <code>draw</code>'],
-        ['10', '<code>Extra</code>', '<code>true</code> = extra turn, the opponent was blocked'],
-      ]),
+      type: 'diagram', title: 'The game state: one term, 10 slots',
+      diagram: `<div style="font:700 52px/1.6 Consolas,'Cascadia Code',Menlo,monospace;color:#fff;text-align:left">` +
+        `<span style="text-decoration:underline;text-decoration-color:#555;text-underline-offset:8px">s</span><span style="color:#8f8f8f">(</span>` +
+        `Board<span style="color:#8f8f8f">,</span> Phase<span style="color:#8f8f8f">,</span> Turn<span style="color:#8f8f8f">,</span><br>` +
+        `&nbsp;&nbsp;HandW<span style="color:#8f8f8f">,</span> HandB<span style="color:#8f8f8f">,</span> DropsLeft<span style="color:#8f8f8f">,</span><br>` +
+        `&nbsp;&nbsp;Chain<span style="color:#8f8f8f">,</span> NoCapture<span style="color:#8f8f8f">,</span><br>` +
+        `&nbsp;&nbsp;Winner<span style="color:#8f8f8f">,</span> Extra<span style="color:#8f8f8f">)</span></div>`,
     },
     {
       type: 'code', title: 'The start of the game', lang: 'prolog', size: 24, codeFlex: 2,
