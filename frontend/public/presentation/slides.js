@@ -704,7 +704,10 @@ apply_move_(s(B0, drop, T, HW0, HB0, DL0, Ch, NC, W, _), drop(I), S, []) :-
     }, [
       { t: '1. allowed?', show: '1-6', h: '1-2,5-6', note: '<b>Why the <code>!</code>?</b> Once a result is found, forget the other ways: no leftover choice points. The AI calls <code>apply_move</code> thousands of times, so this saves memory and time. Lines 5–6: empty, not the centre, a stone in hand, otherwise the move fails.' },
       { t: '2. place it', show: '4,7-10', h: '7-10', note: 'Stone on the board, one less in hand, one drop less this turn.' },
-      { t: '3. who drops next', show: '4,11-16', h: '11-16', note: 'All 24 placed → move phase · 2nd drop → other player · 1st drop → drop again.' },
+      { t: '3. who drops next', show: '4,11-16', h: '11-16', note: '<ul style="margin-left:30px;line-height:1.55">' +
+        '<li><code>HW =:= 0, HB =:= 0</code> → all 24 stones placed → <b>move phase</b>, black moves first</li>' +
+        '<li><code>DL1 =:= 0</code> → 2nd drop of the turn done → <b>the other player</b> gets 2 drops</li>' +
+        '<li>otherwise → only the 1st drop → <b>the same player</b> drops once more</li></ul>' },
     ]),
     cases('After a drop: who plays?', [
       ['all 24 stones placed', 'move phase starts, <b>black</b> moves first'],
