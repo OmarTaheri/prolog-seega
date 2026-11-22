@@ -140,6 +140,19 @@
     const all = list.map((s) => s.t);
     return list.map((s, i) => Object.assign({}, base, s, { stepAll: all, stepIndex: i }));
   }
+  /* cases(): one big numbered line per case (1 → …, 2 → …) */
+  function cases(title, rows, note) {
+    const big = rows.length <= 4;
+    return {
+      type: 'diagram', title,
+      diagram: `<div class="flow" style="gap:${big ? 18 : 12}px">` + rows.map(([q, a], k) =>
+        `<div class="frow"><span class="n" style="font-size:${big ? 40 : 34}px;width:60px">${k + 1}</span>` +
+        `<div class="q" style="width:470px;font-size:${big ? 32 : 28}px;padding:${big ? 16 : 12}px 24px">${q}</div>` +
+        `<span class="y" style="font-size:36px;color:#fff">→</span>` +
+        `<div class="a" style="font-size:${big ? 30 : 27}px;padding:${big ? 16 : 12}px 24px;max-width:700px">${a}</div></div>`).join('') + `</div>`,
+      note,
+    };
+  }
   function sec(name, list) { return list.flat().map((s) => Object.assign({ section: name }, s)); }
 
   /* call-graph lane: [['handle','api.pl'], ...] */
@@ -537,19 +550,35 @@ H = 7.
 W = 9, B = 7.`,
       note: 'Pattern matching on the first argument replaces an if / else.',
     },
+    {
+      type: 'diagram', title: '<code>legal_moves</code>: 4 situations',
+      diagram: `<div class="flow" style="gap:18px">` + [
+        ['1', 'game over', 'no moves'],
+        ['2', 'drop phase', 'any empty square <b>except the centre</b>'],
+        ['3', 'move phase, no chain', 'every normal slide'],
+        ['4', 'move phase, in a chain', 'only the chain stone, only moves that capture again, plus <code>stop</code>'],
+      ].map(([n, q, a]) => `<div class="frow"><span class="n" style="font-size:40px;width:60px">${n}</span>` +
+        `<div class="q" style="width:470px;font-size:32px;padding:16px 24px">${q}</div><span class="y" style="font-size:36px;color:#fff">→</span>` +
+        `<div class="a" style="font-size:30px;padding:16px 24px;max-width:700px">${a}</div></div>`).join('') + `</div>`,
+      note: 'One clause per situation. The cut <code>!</code> says “this is the right case, do not try the clauses below”.',
+    },
     ...steps({ type: 'code', title: '<code>legal_moves</code>', lang: 'prolog', code: LEGAL, size: 24 }, [
+      { t: '1. game over', show: '1', note: '<span style="font-size:40px;color:#fff;font-weight:800">Phase = <code>over</code> → no moves: <code>[]</code></span>' },
       {
-        t: '1. over / drop phase', show: '1-3', type: 'split', size: 22, ratio: 1.7,
-        diagram: fig(grid({ size: 72, nums: true, cross: [12] }), 'game over → <code>[]</code><br>drop phase → 24 drops, <b>not the centre</b>'),
+        t: '2. drop phase', show: '2-3', type: 'split', size: 22, ratio: 1.7,
+        diagram: fig(grid({ size: 72, nums: true, cross: [12] }), '24 drops: every empty square<br><b>except the centre</b>'),
+        note: '<span style="font-size:36px;color:#fff;font-weight:800">Any empty square except the centre (12)</span>',
       },
-      { t: '2. normal turn', show: '4-5', note: 'No chain: every slide of every stone I have.' },
-      { t: '3. capture chain', show: '6-11', ex: R`
+      {
+        t: '3. normal turn', show: '4-5', note: '<span style="font-size:40px;color:#fff;font-weight:800">Chain = <code>none</code> → every normal slide</span>',
+      },
+      {
+        t: '4. capture chain', show: '6-11', ex: R`
 chain = 7  (a square)
-->  only stone 7,
-    only moves that capture,
-    plus stop
 
-Moves = [move(7, 8), stop]` },
+Moves = [move(7, 8), stop]`,
+        note: '<span style="font-size:32px;color:#fff;font-weight:800">Only the chain stone, only moves that capture again, plus <code>stop</code></span>',
+      },
     ]),
     {
       type: 'split', title: '<code>slide_moves</code>', lang: 'prolog', size: 22, ratio: 1.35,
@@ -630,6 +659,11 @@ N = 2`,
         'white threatens <b>8</b> (6 → 7) and <b>16</b> (6 → 11)'),
       note: 'How many <b>different</b> enemy stones I could capture next move. Used by eval.pl.',
     },
+    cases('<code>apply_move</code>: 3 kinds of move', [
+      ['<code>drop(I)</code>', 'place a stone on square I (drop phase)'],
+      ['<code>move(From, To)</code>', 'slide one square, maybe capture (move phase)'],
+      ['<code>stop</code>', 'end a capture chain'],
+    ], 'One <code>apply_move_</code> clause per kind. An illegal move simply fails.'),
     ...steps({
       type: 'code', title: '<code>apply_move</code>: a drop', lang: 'prolog', size: 24,
       code: R`
@@ -654,6 +688,11 @@ apply_move_(s(B0, drop, T, HW0, HB0, DL0, Ch, NC, W, _), drop(I), S, []) :-
       { t: '2. place it', show: '4,7-10', h: '7-10', note: 'Stone on the board, one less in hand, one drop less this turn.' },
       { t: '3. who drops next', show: '4,11-16', h: '11-16', note: 'All 24 placed → move phase · 2nd drop → other player · 1st drop → drop again.' },
     ]),
+    cases('After a drop: who plays?', [
+      ['all 24 stones placed', 'move phase starts, <b>black</b> moves first'],
+      ['2nd drop of the turn done', 'the other player gets 2 drops'],
+      ['1st drop of the turn done', 'same player drops once more'],
+    ], 'Lines 11–16 of the drop clause: an if / else if / else.'),
     ...steps({
       type: 'code', title: '<code>apply_move</code>: a slide', lang: 'prolog', size: 24,
       code: R`
@@ -774,6 +813,13 @@ evaluate(S, P, _, V) :-
           'material 300 · safety <b>0</b>')),
       note: 'Corners can never be sandwiched and the centre is immune, so stones there are worth more.',
     },
+    cases('<code>square_value</code>: how safe is a square?', [
+      ['corner', '<b>12</b> &nbsp;never capturable'],
+      ['centre (move phase)', '<b>15</b> &nbsp;immune to capture'],
+      ['edge', '<b>4</b> &nbsp;only captured along the edge'],
+      ['next to the centre (drop)', '<b>2</b> &nbsp;decides who gets the centre'],
+      ['anything else', '<b>0</b>'],
+    ], 'Checked top to bottom: the first match wins.'),
     {
       type: 'split', title: '<code>square_value</code>', lang: 'prolog', size: 24, ratio: 1.6,
       code: R`
@@ -792,6 +838,10 @@ safety(B, P, Phase, Score) :-
         fig(grid({ size: 46, text: VAL_DROP, shade: SH_DROP, textSize: 18 }), 'drop phase')),
       note: 'Ordered clauses + cut = a priority list. The last clause is the default (0).',
     },
+    cases('<code>evaluate</code>: 2 cases', [
+      ['the game is over', 'exact score: win <b>10000 + depth</b> · draw 0 · loss −10000 − depth'],
+      ['a normal position', 'guess: material + safety + mobility + threats'],
+    ], 'Clause 1 has a cut, so clause 2 is never tried for a finished game.'),
     {
       type: 'code', title: '<code>evaluate</code>: the game is over', lang: 'prolog', size: 26,
       code: R`
@@ -931,6 +981,10 @@ best_move(S, Depth, Hist, Move, Value, Tree, Stats) :-
       h: '2,8',
       note: 'P = the AI (MAX). Counters reset with <code>flag/3</code>, search from the root with (−∞, +∞), then tree + stats go to the website.',
     },
+    cases('<code>ab</code>: 2 kinds of node', [
+      ['depth used up, game over, or no legal move', '<b>leaf</b>: score it with <code>evaluate</code>'],
+      ['otherwise', '<b>inner node</b>: sort the moves, search them with <code>loop</code>'],
+    ], 'MAX or MIN is decided by whose turn it is.'),
     ...steps({
       type: 'code', title: '<code>ab</code>: one node of the search', lang: 'prolog', size: 24,
       code: R`
@@ -958,6 +1012,12 @@ ab(S, D, A, B, P, Ply, H, V, Best, Node) :-
       { t: '1. leaf → evaluate', show: '1-10', h: '6-10', note: 'Depth used up, game over, or no legal move → score it.' },
       { t: '2. inner node → loop', show: '1,11-18', h: '12-17', note: 'Moves sorted best first. MAX starts at −∞, MIN at +∞.' },
     ]),
+    cases('<code>loop</code>: what happens to each move', [
+      ['no moves left', 'the best so far is the answer'],
+      ['position seen before', 'score it with a penalty, no deeper search'],
+      ['new position', '<code>ab</code>: search one level deeper'],
+      ['<b>α ≥ β</b>', 'cut: the other moves are pruned'],
+    ], 'After each move: keep it if it is the best so far, MAX raises α, MIN lowers β.'),
     ...steps({ type: 'code', title: '<code>loop</code>: one move at a time', lang: 'prolog', code: LOOP, size: 22 }, [
       { t: '1. play, search deeper', show: '1-10', h: '3-9', note: 'A repeated position gets a penalty instead of a deeper search.' },
       { t: '2. best so far + window', show: '2,11-18', h: '11-18', note: 'MAX raises α, MIN lowers β.' },
@@ -980,6 +1040,12 @@ repetition_leaf(S0, S, P, A, B, Ply, V, Node) :-
         table(['who repeats', 'score'], [['the AI', '<code>E − 40</code>'], ['the opponent', '<code>E + 40</code>']], 'big')),
       note: 'So two AIs cannot shuffle the same stone back and forth forever.',
     },
+    cases('<code>move_key</code>: which move first?', [
+      ['a capture', '<b>−10</b> per captured stone (tried first)'],
+      ['a plain slide', '<b>0</b> (−1 into the centre)'],
+      ['a drop', 'corner <b>0</b> · next to centre <b>1</b> · edge <b>2</b> · other <b>3</b>'],
+      ['<code>stop</code>', '<b>100</b> (tried last)'],
+    ], 'Smaller key = tried first. Good moves first = more alpha-beta cuts.'),
     ...steps({
       type: 'split', title: '<code>order_moves</code>: best moves first', lang: 'prolog', size: 23,
       code: R`
@@ -1064,6 +1130,11 @@ mark_path(N0, N) :-
 :- use_module(ai).`,
       note: '<code>:- if</code> runs <b>while loading</b>, like <code>#ifdef</code> in C: one file works on both versions.',
     },
+    cases('<code>handle</code>: 3 possible outcomes', [
+      ['the command works', '<code>ok:true</code> + the answer'],
+      ['the command fails (illegal move)', '<code>ok:false</code> + “Request failed”'],
+      ['something crashes (bad JSON)', '<code>catch</code> → <code>ok:false</code> + the error'],
+    ], 'Python always gets an answer back, and Prolog never crashes.'),
     {
       type: 'code', title: '<code>handle</code>: the main door', lang: 'prolog', size: 22,
       code: R`
@@ -1080,6 +1151,13 @@ handle(In, Out) :-
     with_output_to(string(Out), json_write_dict(current_output, Resp, [width(0)])).`,
       note: 'JSON text → dict → run the command → <code>ok:true</code>. A failed move → <code>ok:false</code>. A crash is caught by <code>catch</code>.',
     },
+    cases('<code>dispatch</code>: 5 commands', [
+      ['<code>new</code>', 'a fresh game'],
+      ['<code>legal</code>', 'the legal moves of a state'],
+      ['<code>play</code>', 'play the human’s move'],
+      ['<code>ai</code>', 'search and play the best move'],
+      ['<code>hint</code>', 'search, but do not play'],
+    ], 'One clause per command: Prolog picks it by the first argument.'),
     ...steps({
       type: 'code', title: '<code>dispatch</code>: one clause per command', lang: 'prolog', size: 24,
       code: R`
