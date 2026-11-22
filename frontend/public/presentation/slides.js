@@ -702,7 +702,7 @@ apply_move_(s(B0, drop, T, HW0, HB0, DL0, Ch, NC, W, _), drop(I), S, []) :-
     ;   S = s(B, drop, T, HW, HB, DL1, Ch, NC, W, false)
     ).`,
     }, [
-      { t: '1. allowed?', show: '1-6', h: '1-2,5-6', note: 'Empty, not the centre, a stone left in hand. Illegal → <code>apply_move</code> fails.' },
+      { t: '1. allowed?', show: '1-6', h: '1-2,5-6', note: '<b>Why the <code>!</code>?</b> Once a result is found, forget the other ways: no leftover choice points. The AI calls <code>apply_move</code> thousands of times, so this saves memory and time. Lines 5–6: empty, not the centre, a stone in hand, otherwise the move fails.' },
       { t: '2. place it', show: '4,7-10', h: '7-10', note: 'Stone on the board, one less in hand, one drop less this turn.' },
       { t: '3. who drops next', show: '4,11-16', h: '11-16', note: 'All 24 placed → move phase · 2nd drop → other player · 1st drop → drop again.' },
     ]),
