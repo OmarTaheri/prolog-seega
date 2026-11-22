@@ -689,18 +689,131 @@
   .drawer.open.wide, .drawer.wide .drawer-inner { width: min(70vw, 980px); }
   .detail-grid { grid-template-columns: auto 1fr; }
 }
+/* "More" menu: only used on phones */
+.nav-more, .more-sheet, .more-backdrop { display: none; }
+
+/* ---------- phones: board at the bottom, navigation as a bottom tab bar ---------- */
 @media (max-width: 760px) {
-  .shell { inset: 0; border-radius: 0; }
-  .sidebar { width: 64px; padding-top: 14px; }
-  .logo { width: 42px; height: 46px; font-size: 15px; }
-  .nav-item { width: 56px; font-size: 10.5px; }
-  .drawer { position: absolute; left: 64px; top: 0; bottom: 0; z-index: 5; box-shadow: 10px 0 30px -10px rgba(0, 0, 0, .2); }
-  .drawer.open, .drawer.open.wide, .drawer-inner, .drawer.wide .drawer-inner { width: calc(100vw - 64px); }
-  .board-card { padding: 4px 8px; }
-  .pname-main { font-size: 14px; }
-  .icon-btn { width: 34px; height: 34px; }
+  .shell {
+    --tabbar-h: calc(60px + env(safe-area-inset-bottom));
+    inset: 0;
+    border-radius: 0;
+    flex-direction: column;
+    box-shadow: none;
+  }
+
+  /* bottom tab bar (the desktop sidebar, turned sideways) */
+  .sidebar {
+    order: 2;
+    width: 100%;
+    height: var(--tabbar-h);
+    box-sizing: border-box;
+    flex-direction: row;
+    padding: 0 4px env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    z-index: 6;
+  }
+  .logo, .collapse, .nav-secondary { display: none; }
+  .nav { flex-direction: row; justify-content: space-around; gap: 0; width: 100%; }
+  .nav-item { flex: 1; width: auto; padding: 8px 0 6px; font-size: 11px; gap: 3px; }
+  .nav-more { display: flex; }
+  .badge-dot { right: calc(50% - 16px); }
+
+  .more-backdrop { display: block; position: fixed; inset: 0 0 var(--tabbar-h) 0; z-index: 29; background: rgba(20, 22, 28, .18); }
+  .more-sheet {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    right: 10px;
+    bottom: calc(var(--tabbar-h) + 8px);
+    min-width: 210px;
+    padding: 6px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .35);
+    z-index: 30;
+    animation: sheet-up .2s ease;
+  }
+  .more-sheet button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border: none;
+    background: none;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 550;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+  .more-sheet button.on { color: var(--accent); background: var(--accent-soft); }
+
+  /* panels: full screen above the tab bar, sliding up */
+  .drawer,
+  .drawer.open,
+  .drawer.open.wide {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: var(--tabbar-h);
+    width: 100%;
+    z-index: 5;
+    border-right: none;
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform .32s cubic-bezier(.2, .8, .2, 1), visibility .32s;
+  }
+  .drawer.open, .drawer.open.wide { transform: none; visibility: visible; }
+  .drawer-inner, .drawer.wide .drawer-inner { width: 100%; padding: 18px 16px 12px; }
   .legend { position: static; max-width: none; margin: 8px; }
+  .detail-grid { grid-template-columns: auto 1fr; }
+
+  /* game: phase chip on top, the board card centred in the space below it */
+  .stage {
+    order: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 10px 0 6px;
+    min-height: 0;
+  }
+  .phase-chip {
+    position: static;
+    transform: none;
+    order: -1;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .board-card { width: auto !important; max-width: none; margin: auto 0; padding: 0 10px 2px; background: none; }
+  .player-bar { height: 54px; gap: 10px; }
+  .pname-main { font-size: 15px; }
+
+  /* bottom player: info on the first row, the control buttons on a full-width second row */
+  .player-bar.bottom { flex-wrap: wrap; height: auto; padding-top: 6px; row-gap: 4px; }
+  .player-bar.bottom .spacer { display: none; }
+  .player-bar.bottom .pname.right { flex: 1; text-align: left; }
+  .player-bar.bottom .pname.right .pname-sub { justify-content: flex-start; }
+  .player-bar.bottom .controls {
+    order: 2;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 2px 4px;
+  }
+  .icon-btn { width: 44px; height: 44px; }
+  .btn.stop { margin: 4px auto; }
+
+  .toast { bottom: 12px; }
 }
+@media (hover: none) {
+  .nav-item:hover, .icon-btn:hover:not(:disabled) { background: none; }
+}
+@keyframes sheet-up { from { opacity: 0; transform: translateY(10px); } }
 
 /* "− [n] +" number picker used for the search depth */
 .stepper {

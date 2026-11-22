@@ -7,7 +7,7 @@ import { clampDepth, InfoPanel, LEVELS, MovesPanel, SettingsPanel, StatsPanel } 
 import {
   IconArrowLeft, IconBulb, IconFlip, IconGame, IconInfo, IconMoves, IconMute,
   IconNew, IconNext, IconPause, IconPlay, IconPrev, IconSettings, IconStats, IconStop,
-  IconTree, IconVolume,
+  IconTree, IconVolume, IconMore,
 } from './icons'
 import { playMoveSound } from './sound'
 import './App.css'
@@ -23,8 +23,8 @@ const PANELS = [
   { id: 'tree', label: 'Tree', title: 'Search tree', Icon: IconTree, wide: true },
   { id: 'moves', label: 'Moves', title: 'Moves', Icon: IconMoves },
   { id: 'stats', label: 'Stat.', title: 'Statistics', Icon: IconStats },
-  { id: 'info', label: 'Info', title: 'How to play', Icon: IconInfo },
-  { id: 'settings', label: 'Settings', title: 'Settings', Icon: IconSettings },
+  { id: 'info', label: 'Info', title: 'How to play', Icon: IconInfo, secondary: true },
+  { id: 'settings', label: 'Settings', title: 'Settings', Icon: IconSettings, secondary: true },
 ]
 
 function loadSettings() {
@@ -64,6 +64,7 @@ export default function App() {
   const [clock, setClock] = useState({ w: 0, b: 0, side: 'w', since: Date.now() })
   const [now, setNow] = useState(Date.now())
   const [boardSize, setBoardSize] = useState(480)
+  const [moreOpen, setMoreOpen] = useState(false)   // mobile "More" menu in the bottom bar
   const stageRef = useRef(null)
   const gameId = useRef(0)
 
@@ -91,8 +92,11 @@ export default function App() {
     if (!el) return
     const ro = new ResizeObserver(([e]) => {
       const { width, height } = e.contentRect
-      const size = Math.floor(Math.min(width - 100, height - 2 * 62 - 96))
-      setBoardSize(Math.max(240, Math.min(size, 900)))
+      // phones: the board fills the width; leave room for 2 player bars, the controls row and the phase chip
+      const size = width < 700
+        ? Math.floor(Math.min(width - 28, height - 2 * 62 - 110))
+        : Math.floor(Math.min(width - 100, height - 2 * 62 - 96))
+      setBoardSize(Math.max(200, Math.min(size, 900)))
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -391,20 +395,41 @@ export default function App() {
       <nav className="sidebar">
         <div className="logo" title="Seega">SG</div>
         <div className="nav">
-          <button className={`nav-item ${panel === null ? 'on' : ''}`} onClick={() => setPanel(null)}>
+          <button className={`nav-item ${panel === null && !moreOpen ? 'on' : ''}`} onClick={() => { setPanel(null); setMoreOpen(false) }}>
             <IconGame /><span>Game</span>
           </button>
-          {PANELS.map(({ id, label, Icon }) => (
-            <button key={id} className={`nav-item ${panel === id ? 'on' : ''}`} onClick={() => openPanel(id)}>
+          {PANELS.map(({ id, label, Icon, secondary }) => (
+            <button key={id} className={`nav-item ${secondary ? 'nav-secondary' : ''} ${panel === id ? 'on' : ''}`}
+              onClick={() => { openPanel(id); setMoreOpen(false) }}>
               <Icon />
               <span>{label}</span>
               {id === 'tree' && treeUnseen && <i className="badge-dot" />}
             </button>
           ))}
-          <button className="nav-item" onClick={() => set({ sound: !settings.sound })}>
+          <button className="nav-item nav-secondary" onClick={() => set({ sound: !settings.sound })}>
             {settings.sound ? <IconVolume /> : <IconMute />}<span>Vol.</span>
           </button>
+          {/* mobile only: Info, Settings and Sound live behind "More" */}
+          <button className={`nav-item nav-more ${moreOpen || PANELS.some((p) => p.secondary && p.id === panel) ? 'on' : ''}`}
+            onClick={() => setMoreOpen(!moreOpen)}>
+            <IconMore /><span>More</span>
+          </button>
         </div>
+        {moreOpen && (
+          <>
+            <div className="more-backdrop" onClick={() => setMoreOpen(false)} />
+            <div className="more-sheet">
+              {PANELS.filter((p) => p.secondary).map(({ id, title, Icon }) => (
+                <button key={id} className={panel === id ? 'on' : ''} onClick={() => { setPanel(id); setMoreOpen(false) }}>
+                  <Icon /><span>{title}</span>
+                </button>
+              ))}
+              <button onClick={() => set({ sound: !settings.sound })}>
+                {settings.sound ? <IconVolume /> : <IconMute />}<span>Sound {settings.sound ? 'on' : 'off'}</span>
+              </button>
+            </div>
+          </>
+        )}
         <button className="collapse" onClick={() => setPanel(null)} disabled={!panel} title="Close panel">
           <IconArrowLeft size={18} />
         </button>

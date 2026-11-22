@@ -74,4 +74,5 @@ export const IconNew = make(<>
   <path d="M12 5v14M5 12h14" />
 </>)
 export const IconClose = make(<path d="M6 6l12 12M18 6 6 18" />)
+export const IconMore = make(<path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />)
 export const IconStop = make(<rect x="6" y="6" width="12" height="12" rx="2" />)

@@ -155,11 +155,6 @@
   }
   function sec(name, list) { return list.flat().map((s) => Object.assign({ section: name }, s)); }
 
-  /* call-graph lane: [['handle','api.pl'], ...] */
-  const lane = (title, items) => `<div class="lane"><span class="name">${title}</span><div class="drow" style="gap:10px">` +
-    items.map(([p, f], i) => (i ? '<div class="darrow" style="font-size:34px">→</div>' : '') +
-      `<div class="box sm"><b><code>${p}</code></b><small>${f}</small></div>`).join('') + '</div></div>';
-
   /* fan(): how fast the game tree grows in the drop phase (24 · 23 · 22 · ...) */
   function fan() {
     const ax = 380, top = 24, base = 520, half = 300;
