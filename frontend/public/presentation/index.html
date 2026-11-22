@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <title>Seega in Prolog</title>
-  <link rel="stylesheet" href="/presentation/style.css">
+  <script>
+    // Add a fresh ?v= to every file so the browser never shows an old cached deck.
+    window.DECK_V = Date.now();
+    document.write('<link rel="stylesheet" href="/presentation/style.css?v=' + window.DECK_V + '">');
+  </script>
 </head>
 <body>
   <div id="viewport">
@@ -16,7 +21,9 @@
   </div>
   <div id="progress"><div id="bar"></div></div>
   <div id="help">← → or click to move · F fullscreen · Home / End</div>
-  <script src="/presentation/slides.js"></script>
-  <script src="/presentation/app.js"></script>
+  <script>
+    document.write('<script src="/presentation/slides.js?v=' + window.DECK_V + '"><\/script>');
+    document.write('<script src="/presentation/app.js?v=' + window.DECK_V + '"><\/script>');
+  </script>
 </body>
 </html>
