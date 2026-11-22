@@ -214,95 +214,29 @@
       note: 'Everything about the game lives in Prolog. The other two layers only show it and carry messages.',
     },
     {
-      type: 'split', title: 'Five modules, stacked', lang: 'prolog', size: 19, ratio: 1.2,
+      type: 'split', title: 'Five modules, stacked', lang: 'prolog', size: 24, ratio: 1.3,
       code: R`
-% board.pl
-:- module(board, [coord/3, adj/3, cell/3, ...]).
-
 % rules.pl
-:- module(rules, [legal_moves/2, apply_move/4, ...]).
 :- use_module(board).
 
 % eval.pl
-:- module(eval, [evaluate/4, win_score/1]).
 :- use_module(board).
 :- use_module(rules).
 
 % ai.pl
-:- module(ai, [best_move/6, best_move/7, ...]).
 :- use_module(board).
 :- use_module(rules).
 :- use_module(eval).
 
 % api.pl
-:- module(seega_api, [handle/2, serve_stdio/0]).
-:- use_module(board).   % ... rules, eval, ai`,
+:- use_module(board).   % + rules, eval, ai`,
       diagram: colT(
         box('api.pl', 'JSON door', 'sm'), arrow('', 'down'),
         box('ai.pl', 'the search', 'sm'), arrow('', 'down'),
         box('eval.pl', 'the score', 'sm'), arrow('', 'down'),
         box('rules.pl', 'the rules', 'sm'), arrow('', 'down'),
         box('board.pl', 'the board', 'sm inv')),
-      note: 'Each file only uses the files <b>below</b> it. <code>tests.pl</code> tests all of them.',
-    },
-    {
-      type: 'split', title: 'A module exports <code>name/N</code>', lang: 'prolog', size: 23,
-      code: R`
-:- module(board,
-          [ board_size/1,
-            centre/1,
-            coord/3,
-            adj/3,
-            other/2,
-            empty_board/1,
-            cell/3,
-            set_cell/4,
-            piece_count/3,
-            board_string/2,
-            square_name/2,
-            corner/1,
-            edge/1
-          ]).`,
-      diagram: table(['written', 'call'], [
-        ['board_size/1', '<code>board_size(5)</code>'],
-        ['coord/3', '<code>coord(12, 2, 2)</code>'],
-        ['set_cell/4', '<code>set_cell(7, w, B0, B)</code>'],
-      ], 'big'),
-      note: '<code>N</code> = number of arguments. Predicates not in the list (like <code>dir_delta/3</code>) stay private.',
-    },
-    {
-      type: 'diagram', title: 'What is inside each file',
-      diagram: table(['file', 'main predicates', 'job'], [
-        ['board.pl', '<code>coord/3</code> <code>adj/3</code> <code>cell/3</code> <code>set_cell/4</code> <code>piece_count/3</code>', 'facts about the 5×5 board'],
-        ['rules.pl', '<code>initial_state/1</code> <code>legal_moves/2</code> <code>apply_move/4</code> <code>captures_for/4</code>', 'what is allowed, what a move does'],
-        ['eval.pl', '<code>evaluate/4</code> <code>square_value/3</code>', 'one number: how good is a position'],
-        ['ai.pl', '<code>best_move/7</code> <code>ab/10</code> <code>loop/17</code> <code>order_moves/3</code>', 'minimax + alpha-beta'],
-        ['api.pl', '<code>handle/2</code> <code>dispatch/3</code> <code>serve_stdio/0</code>', 'JSON in, JSON out'],
-        ['tests.pl', '<code>test(...)</code>', 'plunit tests'],
-      ], 'big'),
-    },
-    {
-      type: 'code', title: 'Three terms carry everything', lang: 'prolog', size: 25,
-      code: R`
-% the BOARD: one term, 25 squares        (board.pl)
-b(e,e,w,b,e, e,e,e,e,e, e,e,e,e,e, e,e,e,e,e, e,e,e,e,e)
-
-% the GAME STATE: one term, 10 slots     (rules.pl)
-s(Board, Phase, Turn, HandW, HandB, DropsLeft, Chain, NoCapture, Winner, Extra)
-
-% a MOVE                                  (rules.pl)
-drop(I)            % place a stone on square I
-move(From, To)     % slide a stone one square
-stop               % end a capture chain`,
-      note: 'Nothing is changed in place: every move builds a <b>new</b> state term.',
-    },
-    {
-      type: 'diagram', title: 'How the predicates call each other',
-      diagram: `<div class="dcol" style="align-items:flex-start;gap:34px">` +
-        lane('human move', [['handle', 'api.pl'], ['dispatch', 'api.pl'], ['apply_move', 'rules.pl'], ['move_captures', 'rules.pl'], ['captures_for', 'rules.pl'], ['cell · adj', 'board.pl']]) +
-        lane('AI move', [['dispatch', 'api.pl'], ['best_move', 'ai.pl'], ['ab', 'ai.pl'], ['loop', 'ai.pl'], ['evaluate', 'eval.pl'], ['threats', 'rules.pl']]) +
-        lane('new game', [['dispatch', 'api.pl'], ['initial_state', 'rules.pl'], ['empty_board', 'board.pl']]) + '</div>',
-      note: 'Every call goes <b>down</b> the stack: api → ai → eval → rules → board.',
+      note: 'Each file is a module and only uses the files <b>below</b> it.',
     },
   ]));
 
@@ -318,7 +252,7 @@ term_expansion(generate_kb, Facts) :-
             ( between(0, 4, R), between(0, 4, C),
               dir_delta(D, DR, DC),
               R2 is R + DR, C2 is C + DC,
-              between(0, 4, R2), between(0, 4, C2),   % still on the board?
+              between(0, 4, R2), between(0, 4, C2),
               I is R*5 + C, J is R2*5 + C2 ),
             Adjs),
     append(Coords, Adjs, Facts).
@@ -363,28 +297,65 @@ dir_delta(right,  0,  1).`,
         'from square 7 (row 1, col 2):<br><b>up</b> = row − 1 → square 2'),
       note: 'Only 4 directions: Seega has no diagonal moves.',
     },
-    ...steps({ type: 'code', title: '<code>term_expansion</code>', lang: 'prolog', code: TERM_EXP, size: 20, codeFlex: 2.1, exSize: 20 }, [
-      { t: '1. the trigger', h: '1,16', ex: R`
-% Prolog reads   generate_kb.
-% and first asks
-term_expansion(generate_kb, Facts)
-% -> it loads Facts instead:
-% 25 coord + 80 adj = 105 facts` },
-      { t: '2. coord', h: '2-5', ex: R`
-% two betweens = two for-loops
-R = 0, C = 0  ->  coord(0, 0, 0)
-R = 0, C = 1  ->  coord(1, 0, 1)
-R = 2, C = 2  ->  coord(12, 2, 2)
-R = 4, C = 4  ->  coord(24, 4, 4)` },
+    {
+      type: 'split', title: 'The problem: 25 <code>coord</code> facts', lang: 'prolog', size: 26,
+      code: R`
+% coord(Square, Row, Col)
+coord(0, 0, 0).
+coord(1, 0, 1).
+coord(2, 0, 2).
+coord(3, 0, 3).
+coord(4, 0, 4).
+coord(5, 1, 0).
+...
+coord(12, 2, 2).
+...
+coord(24, 4, 4).`,
+      diagram: fig(grid({ size: 86, nums: true, text: Object.fromEntries([...Array(25).keys()].map((i) => [i, Math.floor(i / 5) + ',' + (i % 5)])), textSize: 22 }), 'every square needs its row and column'),
+    },
+    {
+      type: 'split', title: '… and 80 <code>adj</code> facts', lang: 'prolog', size: 24,
+      code: R`
+% adj(Square, Direction, Neighbour)
+adj(0, down, 5).
+adj(0, right, 1).
+adj(1, down, 6).
+adj(1, left, 0).
+adj(1, right, 2).
+...
+adj(12, up, 7).
+adj(12, down, 17).
+adj(12, left, 11).
+adj(12, right, 13).
+...
+adj(24, left, 23).`,
+      diagram: fig(grid({ size: 84, nums: true, arrows: [[0, 5, 'thin'], [0, 1, 'thin'], [12, 7], [12, 17], [12, 11], [12, 13]] }),
+        'corner 0 has 2 neighbours, centre 12 has 4'),
+      note: '25 + 80 = <b>105 facts</b> to type by hand: long, and one typo breaks the game.',
+    },
+    {
+      type: 'diagram', title: 'The solution: let Prolog write them',
+      diagram: row(
+        box('<code>generate_kb.</code>', 'one line in board.pl'),
+        arrow('Prolog reads it'),
+        box('<code>term_expansion</code>', 'built-in hook,<br>our rule matches'),
+        arrow('replaced by'),
+        box('105 facts', '25 × <code>coord/3</code><br>80 × <code>adj/3</code>', 'inv')),
+      note: 'The knowledge base is <b>generated while the file loads</b>, exactly as if we had typed it.',
+    },
+    ...steps({ type: 'code', title: '<code>term_expansion</code>', lang: 'prolog', code: TERM_EXP, size: 26 }, [
+      { t: '1. the trigger', show: '1,16', h: '1,16', note: 'When Prolog reads <code>generate_kb.</code> it asks <code>term_expansion(generate_kb, Facts)</code> and loads <code>Facts</code> instead.' },
+      { t: '2. coord', show: '1-5', h: '2-5', note: 'Two <code>between</code>s = two for-loops: R = 0 … 4, C = 0 … 4 → <code>coord(I, R, C)</code> with I = R*5 + C.' },
       {
-        t: '3. adj, only on the board', h: '6-14', type: 'split', size: 15, ratio: 1.3,
-        diagram: fig(grid({ size: 70, nums: true, pad: 64, board: B('w....', '.....', '.....', '.....', '.....'),
+        t: '3. adj, only on the board', show: '1,6-13', h: '6-13', type: 'split', size: 24, ratio: 1.45,
+        diagram: fig(grid({ size: 68, nums: true, pad: 62, board: B('w....', '.....', '.....', '.....', '.....'),
           arrows: [[0, 'up', 'no'], [0, 'left', 'no'], [0, 5], [0, 1]] }),
-          'square 0: up / left give −1<br><code>between(0, 4, -1)</code> fails → skipped<br>→ <code>adj(0, down, 5)</code>, <code>adj(0, right, 1)</code>'),
+          'square 0: up / left give −1<br><code>between(0, 4, -1)</code> fails → skipped'),
       },
+      { t: '4. append → the facts', show: '1,14-16', h: '14', note: '25 coord + 80 adj are glued into one list, and that list replaces <code>generate_kb.</code>' },
     ]),
     {
-      type: 'stack', title: '<code>corner</code> and <code>edge</code>', lang: 'prolog', size: 23,
+      type: 'stack', title: '<code>corner</code> and <code>edge</code>', lang: 'prolog', size: 24,
       code: R`
 corner(I) :- coord(I, R, C), memberchk(R, [0,4]), memberchk(C, [0,4]).
 
@@ -397,46 +368,57 @@ edge(I)   :- coord(I, R, C), ( memberchk(R, [0,4]) ; memberchk(C, [0,4]) ), \+ c
         `<span style="color:#9a9a9a"><code>,</code> = and &nbsp; <code>;</code> = or &nbsp; <code>\\+</code> = not</span></div>`),
     },
     {
-      type: 'split', title: '<code>cell</code>: read a square', lang: 'prolog', size: 24,
+      type: 'split', title: '<code>empty_board</code>: making a board', lang: 'prolog', size: 24, ratio: 1.45,
+      code: R`
+empty_board(B) :-
+    functor(B, b, 25),
+    forall(between(1, 25, I), nb_setarg(I, B, e)).`,
+      ex: R`
+?- functor(B, b, 3).
+B = b(_, _, _).
+
+?- empty_board(B).
+B = b(e,e,e,e,e, e,e,e,e,e, ...).`,
+      exSize: 22,
+      diagram: fig(grid({ size: 84, nums: true, text: Object.fromEntries([...Array(25).keys()].map((i) => [i, i + 1])), textSize: 26 }),
+        'small = <b>square</b> 0 … 24 · big = <b>argument</b> 1 … 25'),
+      note: 'Squares start at 0, arguments start at 1, so square <b>I</b> is argument <b>I + 1</b>.',
+    },
+    ...steps({
+      type: 'split', title: 'Get and set a square', lang: 'prolog', size: 24,
       code: R`
 cell(I, B, V) :-
     (   integer(I)
     ->  I1 is I + 1, arg(I1, B, V)
     ;   arg(I1, B, V), I is I1 - 1
-    ).`,
-      ex: R`
-?- cell(2, B, V).      % square known
-V = b.
-
-?- cell(I, B, w).      % square unknown
-I = 0 ;
-I = 3.`,
-      diagram: fig(grid({ size: 80, nums: true, board: B('w.bw.', '.....', '.....', '.....', '.....') }), 'it works in both directions'),
-      note: 'Squares count from 0, arguments from 1: hence <code>+ 1</code> and <code>- 1</code>.',
-    },
-    {
-      type: 'stack', title: 'Making and changing boards', lang: 'prolog', size: 23,
-      code: R`
-empty_board(B) :-
-    functor(B, b, 25),
-    forall(between(1, 25, I), nb_setarg(I, B, e)).
+    ).
 
 set_cell(I, V, B0, B) :-
     duplicate_term(B0, B),
     I1 is I + 1,
     nb_setarg(I1, B, V).`,
-      ex: R`
-?- functor(B, b, 3).
-B = b(_, _, _).
+    }, [
+      {
+        t: '1. get: cell', show: '1-5', ex: R`
+?- cell(2, B, V).      % square known
+V = b.                 % arg 3
 
-% set_cell copies first:
-% B0 is never changed`,
-      exSize: 22,
-      diagram: row(
-        fig(grid({ size: 46, nums: true }), '<b>B0</b>'),
-        arrow('set_cell(12, w, B0, B)'),
-        fig(grid({ size: 46, nums: true, board: B('.....', '.....', '..w..', '.....', '.....'), ring: [12] }), '<b>B</b> = the copy')),
-    },
+?- cell(I, B, w).      % square unknown
+I = 0 ;
+I = 3.`,
+        diagram: fig(grid({ size: 80, nums: true, board: B('w.bw.', '.....', '.....', '.....', '.....'), ring: [2] }), 'square 2 = argument 3'),
+      },
+      {
+        t: '2. set: set_cell', show: '7-10', ex: R`
+?- set_cell(12, w, B0, B).
+% copy B0, then write arg 13`,
+        diagram: row(
+          fig(grid({ size: 44, nums: true }), '<b>B0</b> unchanged'),
+          arrow(''),
+          fig(grid({ size: 44, nums: true, board: B('.....', '.....', '..w..', '.....', '.....'), ring: [12] }), '<b>B</b> = the copy')),
+        note: 'Copy first: the AI needs the old board again when it backtracks.',
+      },
+    ]),
     {
       type: 'split', title: '<code>piece_count</code>', lang: 'prolog', size: 26,
       code: R`
@@ -449,7 +431,7 @@ N = 3.`,
         '<code>cell(_, B, w)</code> succeeds 3 times'),
     },
     {
-      type: 'code', title: '<code>board_string</code>: board ⇄ text', lang: 'prolog', size: 19, codeFlex: 2.2, exSize: 22,
+      type: 'code', title: '<code>board_string</code>: board ⇄ text', lang: 'prolog', size: 24,
       code: R`
 board_string(B, S) :-
     (   nonvar(B)
@@ -458,18 +440,10 @@ board_string(B, S) :-
         maplist([C,A]>>atom_chars(A, [C]), Chars, Cells),
         B =.. [b|Cells]
     ).`,
-      ex: R`
-% board -> string
-b(e,w,b) =.. [b,e,w,b]
--> "ewb"
-
-% string -> board
-"ewb" -> [e,w,b]
--> b(e,w,b)`,
-      note: 'Used to send the board to the website as text.',
+      note: '<code>b(e,w,b) =.. [b,e,w,b]</code> → <code>"ewb"</code>, and back. Used to send the board to the website as text.',
     },
     {
-      type: 'split', title: '<code>square_name</code>', lang: 'prolog', size: 23,
+      type: 'split', title: '<code>square_name</code>', lang: 'prolog', size: 24,
       code: R`
 square_name(I, Name) :-
     coord(I, R, C),
@@ -530,7 +504,7 @@ captures_for(B, T, To, Caps) :-
       ]),
     },
     {
-      type: 'code', title: 'The start of the game', lang: 'prolog', size: 22, codeFlex: 2,
+      type: 'code', title: 'The start of the game', lang: 'prolog', size: 24, codeFlex: 2,
       code: R`
 pieces_per_player(12).
 drops_per_turn(2).
@@ -569,16 +543,13 @@ H = 7.
 W = 9, B = 7.`,
       note: 'Pattern matching on the first argument replaces an if / else.',
     },
-    ...steps({ type: 'code', title: '<code>legal_moves</code>', lang: 'prolog', code: LEGAL, size: 22, codeFlex: 2 }, [
+    ...steps({ type: 'code', title: '<code>legal_moves</code>', lang: 'prolog', code: LEGAL, size: 24 }, [
       {
-        t: '1. over / drop phase', h: '1-3', type: 'split', size: 19, ratio: 1.3,
+        t: '1. over / drop phase', show: '1-3', type: 'split', size: 22, ratio: 1.7,
         diagram: fig(grid({ size: 72, nums: true, cross: [12] }), 'game over → <code>[]</code><br>drop phase → 24 drops, <b>not the centre</b>'),
       },
-      { t: '2. normal turn', h: '4-5', ex: R`
-chain = none
-->  every slide of
-    every stone I have` },
-      { t: '3. capture chain', h: '6-11', ex: R`
+      { t: '2. normal turn', show: '4-5', note: 'No chain: every slide of every stone I have.' },
+      { t: '3. capture chain', show: '6-11', ex: R`
 chain = 7  (a square)
 ->  only stone 7,
     only moves that capture,
@@ -587,7 +558,7 @@ chain = 7  (a square)
 Moves = [move(7, 8), stop]` },
     ]),
     {
-      type: 'split', title: '<code>slide_moves</code>', lang: 'prolog', size: 20,
+      type: 'split', title: '<code>slide_moves</code>', lang: 'prolog', size: 22, ratio: 1.35,
       code: R`
 slide_moves(B, T, Moves) :-
     findall(move(I, J),
@@ -609,7 +580,7 @@ slide_moves(B, T, Moves) :-
         fig(grid({ size: 66, board: B('.....', '.....', '.wbw.', '.....', '.....') }), 'on the centre: <b>never</b> captured')),
       note: 'Only a stone that <b>moves</b> into place captures. Lines are straight: no diagonals.',
     },
-    ...steps({ type: 'split', title: '<code>captures_for</code>', lang: 'prolog', code: CAPS, size: 18, ratio: 1.25 }, [
+    ...steps({ type: 'split', title: '<code>captures_for</code>', lang: 'prolog', code: CAPS, size: 22, ratio: 2.05 }, [
       { t: '1. one square away', h: '2,4', diagram: capGrid({ arrows: [[7, 2], [7, 12], [7, 6], [7, 8]], cap: 'white just moved onto <b>7</b>: look at 2, 12, 6, 8' }) },
       { t: '2. enemy, not centre', h: '5-6', diagram: capGrid({ arrows: [[7, 2, 'no'], [7, 12, 'no'], [7, 6], [7, 8]], cap: '2 is mine ✕ · 12 is the centre ✕' }) },
       { t: '3. same direction → captured', h: '7-9', ex: R`Caps = [8].`, diagram: capGrid({ arrows: [[6, 5, 'no'], [7, 8], [8, 9]], cross: [8], cap: 'left: 5 is empty ✕ · right: 9 is white ✓' }) },
@@ -647,7 +618,7 @@ can_capture_from(B, T, P) :-
       note: '<code>[_|_]</code> = at least one captured stone. The cut stops at the first one: we only need yes or no.',
     },
     {
-      type: 'split', title: '<code>threats</code>', lang: 'prolog', size: 21,
+      type: 'split', title: '<code>threats</code>', lang: 'prolog', size: 23,
       code: R`
 threats(B, T, N) :-
     slide_moves(B, T, Moves),
@@ -665,8 +636,8 @@ N = 2`,
         'white threatens <b>8</b> (6 → 7) and <b>16</b> (6 → 11)'),
       note: 'How many <b>different</b> enemy stones I could capture next move. Used by eval.pl.',
     },
-    {
-      type: 'code', title: '<code>apply_move</code>: a drop', lang: 'prolog', size: 21,
+    ...steps({
+      type: 'code', title: '<code>apply_move</code>: a drop', lang: 'prolog', size: 24,
       code: R`
 apply_move(S0, M, S, Caps) :-
     apply_move_(S0, M, S, Caps), !.
@@ -684,10 +655,13 @@ apply_move_(s(B0, drop, T, HW0, HB0, DL0, Ch, NC, W, _), drop(I), S, []) :-
     ->  other(T, O), S = s(B, drop, O, HW, HB, DPT, Ch, NC, W, false)
     ;   S = s(B, drop, T, HW, HB, DL1, Ch, NC, W, false)
     ).`,
-      note: 'Illegal move → <code>apply_move</code> fails. All 24 placed → move phase · 2nd drop → other player · 1st drop → drop again.',
-    },
+    }, [
+      { t: '1. allowed?', show: '1-6', h: '1-2,5-6', note: 'Empty, not the centre, a stone left in hand. Illegal → <code>apply_move</code> fails.' },
+      { t: '2. place it', show: '4,7-10', h: '7-10', note: 'Stone on the board, one less in hand, one drop less this turn.' },
+      { t: '3. who drops next', show: '4,11-16', h: '11-16', note: 'All 24 placed → move phase · 2nd drop → other player · 1st drop → drop again.' },
+    ]),
     ...steps({
-      type: 'code', title: '<code>apply_move</code>: a slide', lang: 'prolog', size: 19,
+      type: 'code', title: '<code>apply_move</code>: a slide', lang: 'prolog', size: 24,
       code: R`
 apply_move_(s(B0, move, T, HW, HB, DL, Ch, NC0, W, _), move(F, To), S, Caps) :-
     cell(F, B0, T), adj(F, _, To), cell(To, B0, e),     % step 1
@@ -707,9 +681,9 @@ apply_move_(s(B0, move, T, HW, HB, DL, Ch, NC0, W, _), move(F, To), S, Caps) :-
     ;   end_turn(s(B, move, T, HW, HB, DL, none, NC, W, false), S)
     ).`,
     }, [
-      { t: '1. legal + chain rules', h: '2-5', note: 'My stone, a neighbour, empty. In a chain: only the chain stone, and it must capture.' },
-      { t: '2. move, remove, count', h: '6-9', note: 'No capture → quiet counter + 1. A capture → back to 0.' },
-      { t: '3. chain or next player', h: '10-17', note: 'Captured and the same stone can capture again → still my turn, Chain = To.' },
+      { t: '1. legal + chain rules', show: '1-5', h: '2-5', note: 'My stone, a neighbour, empty. In a chain: only the chain stone, and it must capture.' },
+      { t: '2. move, remove, count', show: '1,6-9', h: '6-9', note: 'No capture → quiet counter + 1. A capture → back to 0.' },
+      { t: '3. chain or next player', show: '1,10-17', h: '10-17', note: 'Captured and the same stone can capture again → still my turn, Chain = To.' },
     ]),
     {
       type: 'diagram', title: '<code>resolve_turn</code>: who plays next?',
@@ -724,7 +698,7 @@ apply_move_(s(B0, move, T, HW, HB, DL, Ch, NC0, W, _), move(F, To), S, Caps) :-
       note: 'Checked top to bottom, the first true line wins. Called after every turn change.',
     },
     {
-      type: 'split', title: '<code>resolve_turn</code>', lang: 'prolog', size: 14, ratio: 1.7,
+      type: 'code', title: '<code>resolve_turn</code>', lang: 'prolog', size: 22,
       code: R`
 resolve_turn(S0, S) :-
     S0 = s(B, move, T, HW, HB, DL, _, NC, _, _),
@@ -739,17 +713,16 @@ resolve_turn(S0, S) :-
     ;   slide_moves(B, T, [_|_]) -> S = S0                                               % 4
     ;   slide_moves(B, O, [_|_]) -> S = s(B, move, O, HW, HB, DL, none, NC, none, true)  % 5
     ;   winner_by_count(B, W), S = s(B, over, T, HW, HB, DL, none, NC, W, false)        % 6
-    ).
-
-winner_by_count(B, W) :-
-    piece_count(B, w, NW),
-    piece_count(B, b, NB),
-    (   NW > NB -> W = w
-    ;   NB > NW -> W = b
-    ;   W = draw
     ).`,
-      diagram: fig(grid({ size: 64, nums: true, board: B('bw...', 'w....', '.....', '.....', '.....'), ring: [0], arrows: [[0, 'up', 'no'], [0, 'left', 'no']], pad: 56 }),
-        'case 5: black has no empty neighbour<br>→ <b>white plays again</b>'),
+      note: '<code>winner_by_count</code>: more stones wins, equal = draw.',
+    },
+    {
+      type: 'stack', title: 'Case 5: a blocked player', lang: 'prolog', size: 22,
+      code: R`
+    ;   slide_moves(B, T, [_|_]) -> S = S0                                               % 4
+    ;   slide_moves(B, O, [_|_]) -> S = s(B, move, O, HW, HB, DL, none, NC, none, true)  % 5`,
+      diagram: fig(grid({ size: 66, nums: true, board: B('bw...', 'w....', '.....', '.....', '.....'), ring: [0], arrows: [[0, 'up', 'no'], [0, 'left', 'no']], pad: 56 }),
+        'black to move, no empty neighbour → <b>white plays again</b>, Extra = true'),
     },
   ]));
 
@@ -808,7 +781,7 @@ evaluate(S, P, _, V) :-
       note: 'Corners can never be sandwiched and the centre is immune, so stones there are worth more.',
     },
     {
-      type: 'split', title: '<code>square_value</code>', lang: 'prolog', size: 21, ratio: 1.3,
+      type: 'split', title: '<code>square_value</code>', lang: 'prolog', size: 24, ratio: 1.6,
       code: R`
 square_value(I, _, 12)     :- corner(I), !.
 square_value(I, move, 15)  :- centre(I), !.
@@ -821,8 +794,8 @@ safety(B, P, Phase, Score) :-
         ( cell(I, B, P), square_value(I, Phase, V) ),
         Score).`,
       diagram: row(
-        fig(grid({ size: 52, text: VAL_MOVE, shade: SH_MOVE, textSize: 20 }), 'move phase'),
-        fig(grid({ size: 52, text: VAL_DROP, shade: SH_DROP, textSize: 20 }), 'drop phase')),
+        fig(grid({ size: 46, text: VAL_MOVE, shade: SH_MOVE, textSize: 18 }), 'move phase'),
+        fig(grid({ size: 46, text: VAL_DROP, shade: SH_DROP, textSize: 18 }), 'drop phase')),
       note: 'Ordered clauses + cut = a priority list. The last clause is the default (0).',
     },
     {
@@ -846,22 +819,22 @@ win, 1 depth left -> 10001
 loss, 3 left -> -10003
 % the AI delays losing`,
     },
-    ...steps({ type: 'split', title: '<code>evaluate</code>: a normal position', lang: 'prolog', code: EVAL2, size: 17, exRight: true, exSize: 21 }, [
+    ...steps({ type: 'split', title: '<code>evaluate</code>: a normal position', lang: 'prolog', code: EVAL2, size: 23, ratio: 1.3, exRight: true, exSize: 21 }, [
       {
-        t: '1. material', h: '4-6', ex: R`
+        t: '1. material', show: '1-6', h: '4-6', ex: R`
 white: 4 stones   black: 2
 100 * (4 - 2) = 200`,
         diagram: evalGrid({}, 'move phase · white to move · AI = white'),
       },
       {
-        t: '2. safety', h: '7', ex: R`
+        t: '2. safety', show: '1,7', h: '7', ex: R`
 white: 12 + 12 + 15 + 0 = 39
 black:  0 + 4           = 4
 39 - 4 = 35`,
         diagram: evalGrid({ text: { 0: '12', 4: '12', 12: '15', 13: '0', 8: '0', 19: '4' }, textSize: 20 }, 'value of each stone’s square'),
       },
       {
-        t: '3. mobility + threats', h: '8-16', ex: R`
+        t: '3. mobility + threats', show: '1,8-19', h: '8-16', ex: R`
 mobility: 9 vs 6 slides
 4 * (9 - 6)    = 12
 threats: 1 vs 1, my turn
@@ -869,7 +842,7 @@ threats: 1 vs 1, my turn
         diagram: evalGrid({ arrows: [[4, 3], [19, 18]], ring: [8, 13] }, 'white 4→3 takes 8 · black 19→18 takes 13'),
       },
       {
-        t: '4. add it up', h: '20', ex: R`
+        t: '4. add it up', show: '1,20', h: '20', ex: R`
 200 + 35 + 12 + 20 = 267`,
         diagram: evalGrid({}, 'score for white = <b>+267</b>'),
       },
@@ -945,7 +918,7 @@ state_turn(S, T),
       note: 'So MAX / MIN is decided by <b>whose turn it is</b>, not by “even depth = me”.',
     },
     {
-      type: 'code', title: '<code>best_move</code>: the entry point', lang: 'prolog', size: 21,
+      type: 'code', title: '<code>best_move</code>: the entry point', lang: 'prolog', size: 23,
       code: R`
 best_move(S, Depth, Hist, Move, Value, Tree, Stats) :-
     state_turn(S, P),
@@ -965,7 +938,7 @@ best_move(S, Depth, Hist, Move, Value, Tree, Stats) :-
       note: 'P = the AI (MAX). Counters reset with <code>flag/3</code>, search from the root with (−∞, +∞), then tree + stats go to the website.',
     },
     ...steps({
-      type: 'code', title: '<code>ab</code>: one node of the search', lang: 'prolog', size: 18,
+      type: 'code', title: '<code>ab</code>: one node of the search', lang: 'prolog', size: 24,
       code: R`
 ab(S, D, A, B, P, Ply, H, V, Best, Node) :-
     flag(ab_nodes, N0, N0 + 1),
@@ -988,20 +961,16 @@ ab(S, D, A, B, P, Ply, H, V, Best, Node) :-
     % ... then build the tree node for the website:
     % Node = _{ id:Id, board:BS, max:IsMax, alpha:A, beta:B, score:V, status:Status, children:Kids, ... }.`,
     }, [
-      { t: '1. leaf → evaluate', h: '6-10', note: 'Depth used up, game over, or no legal move → score it.' },
-      { t: '2. inner node → loop', h: '12-17', note: 'Moves sorted best first. MAX starts at −∞, MIN at +∞.' },
+      { t: '1. leaf → evaluate', show: '1-10', h: '6-10', note: 'Depth used up, game over, or no legal move → score it.' },
+      { t: '2. inner node → loop', show: '1,11-18', h: '12-17', note: 'Moves sorted best first. MAX starts at −∞, MIN at +∞.' },
     ]),
-    ...steps({ type: 'code', title: '<code>loop</code>: one move at a time', lang: 'prolog', code: LOOP, size: 14 }, [
-      { t: '1. play, search deeper', h: '3-9', note: 'A repeated position gets a penalty instead of a deeper search.' },
-      { t: '2. best so far + window', h: '11-18', note: 'MAX raises α, MIN lowers β.' },
-      {
-        t: '3. α ≥ β → cut', h: '19-24', type: 'split', size: 13, ratio: 1.5,
-        diagram: tree({ v: 3, k: 'max', ann: 'α = 3', c: [{ v: 2, k: 'min', ann: 'β = 2\nα ≥ β → cut', c: [{ v: 2 }, { s: 'pruned' }, { s: 'pruned' }] }] },
-          { gx: 90, gy: 130, extraW: 200 }),
-      },
+    ...steps({ type: 'code', title: '<code>loop</code>: one move at a time', lang: 'prolog', code: LOOP, size: 22 }, [
+      { t: '1. play, search deeper', show: '1-10', h: '3-9', note: 'A repeated position gets a penalty instead of a deeper search.' },
+      { t: '2. best so far + window', show: '2,11-18', h: '11-18', note: 'MAX raises α, MIN lowers β.' },
+      { t: '3. α ≥ β → cut', show: '2,19-25', h: '19-24', note: 'The remaining moves are never searched: they are pruned. Otherwise go on with the next move.' },
     ]),
     {
-      type: 'split', title: 'Repeated positions', lang: 'prolog', size: 21,
+      type: 'split', title: 'Repeated positions', lang: 'prolog', size: 24,
       code: R`
 contempt(40).
 
@@ -1017,8 +986,8 @@ repetition_leaf(S0, S, P, A, B, Ply, V, Node) :-
         table(['who repeats', 'score'], [['the AI', '<code>E − 40</code>'], ['the opponent', '<code>E + 40</code>']], 'big')),
       note: 'So two AIs cannot shuffle the same stone back and forth forever.',
     },
-    {
-      type: 'split', title: '<code>order_moves</code>: best moves first', lang: 'prolog', size: 17,
+    ...steps({
+      type: 'split', title: '<code>order_moves</code>: best moves first', lang: 'prolog', size: 23,
       code: R`
 order_moves(S, Ms, Ordered) :-
     map_list_to_pairs(move_key(S), Ms, Pairs),
@@ -1038,18 +1007,27 @@ move_key(S, move(F, T), K) :-
     length(Caps, N),
     ( centre(T) -> C = 1 ; C = 0 ),
     K is -(10*N) - C.`,
-      diagram: `<div class="seq" style="font-size:25px">` +
-        `<div class="s"><code>[m1, m2, m3]</code></div>` +
-        `<div class="s" style="color:#888">↓ map_list_to_pairs</div>` +
-        `<div class="s"><code>[0-m1, -10-m2, 100-m3]</code></div>` +
-        `<div class="s" style="color:#888">↓ keysort (small key first)</div>` +
-        `<div class="s"><code>[-10-m2, 0-m1, 100-m3]</code></div>` +
-        `<div class="s" style="color:#888">↓ pairs_values</div>` +
-        `<div class="s"><code>[m2, m1, m3]</code></div></div>`,
-      note: 'Captures first, <code>stop</code> last. Alpha-beta prunes most when the best move is tried first.',
-    },
+    }, [
+      {
+        t: '1. sort by a key', show: '1-4',
+        diagram: `<div class="seq" style="font-size:25px">` +
+          `<div class="s"><code>[m1, m2, m3]</code></div>` +
+          `<div class="s" style="color:#888">↓ map_list_to_pairs</div>` +
+          `<div class="s"><code>[0-m1, -10-m2, 100-m3]</code></div>` +
+          `<div class="s" style="color:#888">↓ keysort (small key first)</div>` +
+          `<div class="s"><code>[-10-m2, 0-m1, 100-m3]</code></div>` +
+          `<div class="s" style="color:#888">↓ pairs_values</div>` +
+          `<div class="s"><code>[m2, m1, m3]</code></div></div>`,
+        note: 'Alpha-beta prunes most when the best move is tried first.',
+      },
+      {
+        t: '2. the keys', show: '6-18', size: 21,
+        diagram: table(['move', 'key'], [['captures 2', '<code>-20</code>'], ['captures 1', '<code>-10</code>'], ['drop on a corner', '<code>0</code>'], ['drop on an edge', '<code>2</code>'], ['stop', '<code>100</code>']], 'big'),
+        note: 'Smaller key = tried first: captures first, <code>stop</code> last.',
+      },
+    ]),
     {
-      type: 'split', title: '<code>mark_path</code>: the expected line', lang: 'prolog', size: 21,
+      type: 'split', title: '<code>mark_path</code>: the expected line', lang: 'prolog', size: 23,
       code: R`
 mark_path(N0, N) :-
     get_dict(best, N0, BI),
@@ -1093,7 +1071,7 @@ mark_path(N0, N) :-
       note: '<code>:- if</code> runs <b>while loading</b>, like <code>#ifdef</code> in C: one file works on both versions.',
     },
     {
-      type: 'code', title: '<code>handle</code>: the main door', lang: 'prolog', size: 21,
+      type: 'code', title: '<code>handle</code>: the main door', lang: 'prolog', size: 22,
       code: R`
 handle(In, Out) :-
     catch(( atom_json_dict(In, Req, []),
@@ -1108,8 +1086,8 @@ handle(In, Out) :-
     with_output_to(string(Out), json_write_dict(current_output, Resp, [width(0)])).`,
       note: 'JSON text → dict → run the command → <code>ok:true</code>. A failed move → <code>ok:false</code>. A crash is caught by <code>catch</code>.',
     },
-    {
-      type: 'code', title: '<code>dispatch</code>: one clause per command', lang: 'prolog', size: 19,
+    ...steps({
+      type: 'code', title: '<code>dispatch</code>: one clause per command', lang: 'prolog', size: 24,
       code: R`
 dispatch(new, _, _{state:J, legal:L}) :-
     initial_state(S),
@@ -1130,10 +1108,13 @@ dispatch(ai, Req, Resp) :-
     req_hist(Req, Hist),
     play_move(S0, M, Hist, S, Caps), !,
     ...`,
-      note: 'Also <code>legal</code> and <code>hint</code> (search, but don’t play). Prolog picks the clause by the first argument.',
-    },
+    }, [
+      { t: 'new', show: '1-4', note: 'A fresh game and its legal moves.' },
+      { t: 'play', show: '6-13', note: 'Illegal move → <code>play_move</code> fails → <code>dispatch</code> fails → <code>ok:false</code>.' },
+      { t: 'ai', show: '15-19', note: 'Search, then play the best move. <code>hint</code> searches but does not play.' },
+    ]),
     {
-      type: 'code', title: '<code>search_request</code>', lang: 'prolog', size: 22, codeFlex: 2.4,
+      type: 'code', title: '<code>search_request</code>', lang: 'prolog', size: 24, codeFlex: 2,
       code: R`
 search_request(Req, S, M, V, Tree, Stats) :-
     req_state(Req, S),
@@ -1154,7 +1135,7 @@ drop phase     ->  at most 3`,
       exSize: 22,
     },
     {
-      type: 'code', title: '<code>play_move</code>: threefold repetition', lang: 'prolog', size: 22,
+      type: 'code', title: '<code>play_move</code>: threefold repetition', lang: 'prolog', size: 24,
       code: R`
 play_move(S0, M, Hist, S, Caps) :-
     apply_move(S0, M, S1, Caps),
@@ -1172,7 +1153,7 @@ history has A twice
       note: 'The history comes from the browser (the server is stateless). A key = 25 board letters + whose turn.',
     },
     {
-      type: 'code', title: 'State ⇄ JSON', lang: 'prolog', size: 20, codeFlex: 2.1,
+      type: 'code', title: 'State ⇄ JSON', lang: 'prolog', size: 21, codeFlex: 2.1,
       code: R`
 state_json(s(B, Phase, T, HW, HB, DL, Ch, NC, W, X), J) :-
     board_string(B, BS),
@@ -1199,7 +1180,7 @@ none_null(X, X).`,
       note: 'The 10 numbered slots get names. <code>json_state</code> does the reverse.',
     },
     {
-      type: 'split', title: '<code>serve_stdio</code>: a loop without <code>while</code>', lang: 'prolog', size: 18, ratio: 1.5,
+      type: 'stack', title: '<code>serve_stdio</code>: a loop without <code>while</code>', lang: 'prolog', size: 22,
       code: R`
 serve_stdio :-
     set_stream(user_input, encoding(utf8)),
@@ -1212,12 +1193,12 @@ serve_stdio :-
         write(user_output, Out), nl(user_output), flush_output(user_output),
         fail
     ).`,
-      diagram: colT(
-        box('<code>repeat</code>', 'always succeeds again', 'sm'), arrow('', 'down'),
-        box('read one line', '', 'sm'), arrow('', 'down'),
-        box('<code>handle</code> + write + flush', 'answer = one line', 'sm inv'), arrow('', 'down'),
-        box('<code>fail</code>', '→ back to repeat ↺', 'sm'),
-        `<div style="font-size:22px;color:#999;margin-top:8px">end_of_file → <code>!</code> stops the loop</div>`),
+      diagram: row(
+        box('<code>repeat</code>', '', 'sm'), arrow(''),
+        box('read a line', '', 'sm'), arrow(''),
+        box('<code>handle</code> + write', '', 'sm inv'), arrow(''),
+        box('<code>fail</code>', 'back to repeat ↺', 'sm'),
+        `<div style="font-size:22px;color:#999;margin-left:20px">end of input →<br><code>!</code> stops it</div>`),
     },
   ]));
 
@@ -1237,7 +1218,7 @@ serve_stdio :-
       ].map(([n, who, what, c]) => `<div class="s"><span class="num">${n}</span><span class="who ${c}">${who}</span><span class="what">${what}</span></div>`).join('') + `</div>`,
     },
     {
-      type: 'code', title: '<code>main.py</code> and <code>bridge.solve</code>', lang: 'python', size: 21,
+      type: 'code', title: '<code>main.py</code> and <code>bridge.solve</code>', lang: 'python', size: 22,
       code: R`
 @app.post("/api/play")
 def play(req: PlayRequest):
@@ -1256,7 +1237,7 @@ def solve(cmd: str, **payload) -> dict:          # bridge.py
       note: '<code>backend()</code> is one of two ways to reach Prolog: Janus or a swipl subprocess.',
     },
     {
-      type: 'code', title: 'Two ways to run Prolog', lang: 'python', size: 17,
+      type: 'code', title: 'Two ways to run Prolog', lang: 'python', size: 22,
       code: R`
 # 1. Janus: Prolog inside the Python process
 janus.consult(API_FILE)
@@ -1275,15 +1256,7 @@ def _make_backend():
         except Exception as exc:  # janus missing or failed to load
             print(f"[bridge] Janus unavailable ({exc}); using swipl subprocess")
     return SubprocessBackend()`,
-      ex: R`
-Janus       faster, needs
-            pip install janus-swi
-
-subprocess  only needs swipl,
-            restarts if Prolog crashes
-
-Docker      SEEGA_BRIDGE=subprocess`,
-      exLang: 'plain', exSize: 19, exLabel: 'compare',
+      note: '<b>Janus</b>: faster, needs <code>pip install janus-swi</code>. <b>Subprocess</b>: only needs swipl and restarts if Prolog crashes. Docker uses the subprocess.',
     },
     { type: 'title', title: 'Thank you', sub: 'board.pl knows the board · rules.pl the rules · eval.pl scores · ai.pl searches · api.pl talks JSON' },
   ]));

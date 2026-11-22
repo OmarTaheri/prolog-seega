@@ -91,7 +91,8 @@ html, body {
 }
 .ln { display: flex; white-space: pre; border-left: 4px solid transparent; padding-left: 10px; margin-left: -14px; }
 .ln .no { width: 2.2em; flex: none; color: #444; text-align: right; padding-right: 1em; user-select: none; }
-.ln.dim { opacity: .26; }
+.ln.dim { opacity: .3; }
+.ln.gap { color: #555; }
 .ln.hl { background: #1d1d1d; border-left-color: #fff; }
 .nolines .ln .no { display: none; }
 

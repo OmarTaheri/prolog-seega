@@ -54,13 +54,18 @@
     return String(src).replace(/^\n/, '').replace(/\s+$/, '');
   }
 
-  function codeBox(src, lang, h, size, label, flex) {
+  function codeBox(src, lang, h, size, label, flex, show) {
     const lines = highlight(clean(src), lang);
     const hs = parseRange(h);
+    const only = parseRange(show);   // show only these lines (keeps the real line numbers)
+    let prev = 0;
     const body = lines.map((l, i) => {
       const n = i + 1;
+      if (only.size && !only.has(n)) return '';
+      const gap = only.size && prev && n > prev + 1 ? '<div class="ln gap"><span class="no"></span><span class="tx">⋮</span></div>' : '';
+      prev = n;
       const cls = hs.size ? (hs.has(n) ? 'hl' : 'dim') : '';
-      return `<div class="ln ${cls}"><span class="no">${n}</span><span class="tx">${l || ' '}</span></div>`;
+      return gap + `<div class="ln ${cls}"><span class="no">${n}</span><span class="tx">${l || ' '}</span></div>`;
     }).join('');
     return `<div class="codebox" style="font-size:${size || 24}px${flex ? `;flex:${flex}` : ''}">` +
       (label ? `<div class="lbl">${label}</div>` : '') + body + '</div>';
@@ -92,7 +97,7 @@
     if (s.type === 'section') {
       return `<div class="t-section"><div class="snum">${s.num || ''}</div><h1>${s.title}</h1><p>${s.sub || ''}</p></div>`;
     }
-    const code = s.code ? codeBox(s.code, s.lang, s.h, s.size, s.codeLabel, s.codeFlex) : '';
+    const code = s.code ? codeBox(s.code, s.lang, s.h, s.size, s.codeLabel, s.codeFlex, s.show) : '';
     const ex = s.ex ? exBox(s) : '';
     let body = '';
     if (s.type === 'code') {
